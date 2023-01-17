@@ -13,8 +13,16 @@ return new class extends Migration
      */
     public function up()
     {
-        Schema::create('exam_units', function (Blueprint $table) {
+        Schema::create('exam_day', function (Blueprint $table) {
             $table->id();
+
+            $table->date('date');
+            $table->date('week_day');
+
+            $table->unsignedBigInteger('time_table_id');
+
+            $table->foreign('time_table_id')->references('id')->on('time_tables')->cascadeOnDelete()->cascadeOnUpdate();
+
             $table->timestamps();
         });
     }
@@ -26,6 +34,6 @@ return new class extends Migration
      */
     public function down()
     {
-        Schema::dropIfExists('exam_units');
+        Schema::dropIfExists('exam_day');
     }
 };

@@ -12,8 +12,8 @@ class ExamDay extends Model
     use HasFactory;
 
     protected $fillable = [
-        'examDate',
-        'examDay',
+        'date',
+        'week_ay',
         'time_table_id',
     ];
 
