@@ -16,37 +16,58 @@
                         <div class="row g-3">
                             <div class="col-sm-12">
                                 <div class="form-floating">
-                                    <label for="name">Name of School</label>
                                     <input type="text" name="school-name" class="form-control" id="name" placeholder="Your school name here...">
+                                    <label for="name">Name of School</label>
                                 </div>
+
+                                @if($errors->any('school-name'))
+                                    <p style="color: red; font-size: medium">{{ $errors->first('school-name') }}</p>
+                                @endif
                             </div>
 
                             <p class="text-primary fw-semi-bold px-3 text-bg-dark">MAIN ADMINISTRATOR INFO</p>
 
                             <div class="col-sm-12">
                                 <div class="form-floating">
-                                    <input type="text" name="admin-fullname" class="form-control" id="mail" placeholder="Fullname">
+                                    <input type="text" name="name" class="form-control" id="mail" placeholder="Fullname" value="{{ old('name') }}">
                                     <label for="mail">Your fullname</label>
                                 </div>
+
+
+                                @if($errors->any('name'))
+                                    <p style="color: red; font-size: medium">{{ $errors->first('name') }}</p>
+                                @endif
                             </div>
                             <div class="col-sm-12">
                                 <div class="form-floating">
-                                    <input type="email" name="admin-email" class="form-control" id="mobile" placeholder="Email Address">
+                                    <input type="email" name="email" class="form-control" id="mobile" placeholder="Email Address" value="{{ old('email') }}">
                                     <label for="mobile">Email Address</label>
                                 </div>
+
+                                @if($errors->any('email'))
+                                    <p style="color: red; font-size: medium">{{ $errors->first('email') }}</p>
+                                @endif
                             </div>
 
                             <div class="col-sm-6">
                                 <div class="form-floating">
-                                    <input type="password" name="admin-password" class="form-control" id="mobile" placeholder="Password">
+                                    <input type="password" name="password" value="{{ old('password') }}" class="form-control" id="mobile" placeholder="Password">
                                     <label for="mobile">Password</label>
                                 </div>
+
+                                @if($errors->any('password'))
+                                    <p style="color: red; font-size: medium">{{ $errors->first('password') }}</p>
+                                @endif
                             </div>
                             <div class="col-sm-6">
                                 <div class="form-floating">
-                                    <input type="password" name="admin-password-confirmation" class="form-control" id="subject" placeholder="Confirm password">
+                                    <input type="password" name="password_confirmation"  value="{{ old('password_confirmation') }}" class="form-control" id="subject" placeholder="Confirm password">
                                     <label for="subject">Password confirm</label>
                                 </div>
+
+                                @if($errors->any('password_confirmation'))
+                                    <p style="color: red; font-size: medium">{{ $errors->first('password_confirmation') }}</p>
+                                @endif
                             </div>
 
                             <div class="col-12 text-center">

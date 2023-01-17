@@ -12,6 +12,17 @@
                         Manage your school profile
                     </h2>
                 </div>
+
+                @if(session('school'))
+                    <nav class="flex-shrink-0 mt-3 mt-sm-0 ms-sm-3" aria-label="breadcrumb">
+                        <div class="alert alert-secondary alert-dismissible alert-success" role="alert">
+                            <p class="mb-0">
+                                {{ session()->get('school') }} <a class="alert-link" href="{{ route('dashboard') }}">OK</a>!
+                            </p>
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                    </nav>
+                @endif
             </div>
         </div>
     </div>
@@ -21,8 +32,11 @@
     <div class="content">
         <!-- jQuery Validation (.js-validation class is initialized in js/pages/be_forms_validation.min.js which was auto compiled from _js/pages/be_forms_validation.js) -->
         <!-- For more examples you can check out https://github.com/jzaefferer/jquery-validation -->
-        <form class="js-validation" action="be_forms_validation.html" method="POST">
+        <form class="js-validation" action="{{ route('school.update') }}" method="POST" enctype="multipart/form-data">
             <div class="block block-rounded">
+
+                @csrf
+                @method('PATCH')
 
                 <div class="block-content block-content-full">
                     <!-- Regular -->
@@ -30,31 +44,60 @@
                     <div class="row items-push">
                         <div class="col-lg-4">
                             <p class="fs-sm text-muted">
-                                Username, email and password validation made easy for your login/register forms
+                                This describes the information for your school as entered by you
                             </p>
                         </div>
                         <div class="col-lg-8 col-xl-5">
                             <div class="mb-4">
                                 <label class="form-label" for="val-username">School name <span class="text-danger">*</span></label>
-                                <input type="text" class="form-control" id="val-username" name="school-name">
+                                <input type="text" class="form-control" id="val-username" name="school-name" value="{{ $school->name ?? old('school-name') }}">
+
+                                @if($errors->any('school-name'))
+                                    <p style="color: red; font-size: small">{{$errors->first('school-name')}}</p>
+                                @endif
                             </div>
+
 
                             <div class="mb-4">
                                 <label class="form-label" for="val-email">Official email</label>
-                                <input type="email" class="form-control" id="val-email" name="school-email">
+                                <input type="email" class="form-control" id="val-email" name="school-email" value="{{ $school->email ?? old('school-email') }}">
+
+                                @if($errors->any('school-email'))
+                                    <p style="color: red; font-size: small">{{$errors->first('school-email')}}</p>
+                                @endif
                             </div>
+
                             <div class="mb-4">
                                 <label class="form-label" for="val-website">Website</label>
-                                <input type="text" class="form-control" id="val-website" name="school-website" placeholder="http://example.com">
+                                <input type="url" class="form-control" value="{{ $school->website ?? old('school-website') }}" id="val-website" name="school-website" placeholder="http://example.com">
+
+                                @if($errors->any('school-website'))
+                                    <p style="color: red; font-size: small">{{$errors->first('school-website')}}</p>
+                                @endif
                             </div>
+
                             <div class="mb-4">
                                 <label class="form-label" for="val-suggestions">Address <span class="text-danger">*</span></label>
-                                <textarea class="form-control" id="val-suggestions" name="address-suggestions" rows="5" placeholder="School Address here..."></textarea>
+                                <textarea class="form-control" id="val-suggestions" name="school-address" rows="5" placeholder="School Address here...">{{ $school->address ?? old('school-address') }}</textarea>
+
+                                @if($errors->any('school-address'))
+                                    <p style="color: red; font-size: small">{{$errors->first('school-address')}}</p>
+                                @endif
                             </div>
+
                             <div class="mb-4">
                                 <label class="form-label" for="example-file-input">Logo</label>
-                                <input class="form-control" type="file" id="example-file-input">
+
+                                <div class="p-2 text-center bg-body-light border-bottom rounded-top" style="width: fit-content">
+                                    <img class="img-avatar img-avatar48 img-avatar-thumb" src="{{ $school->logo }}" alt="">
+                                </div>
+                                <input class="form-control" type="file" name="school-logo" id="example-file-input" value="{{ old('school-logo') }}">
+
+                                @if($errors->any('school-logo'))
+                                    <p style="color: red; font-size: medium">{{$errors->first('school-logo')}}</p>
+                                @endif
                             </div>
+
                             <div class="mb-4">
                                 <label class="form-label" for="val-password">Total Registered Students <span class="text-danger">*</span></label>
                                 <input type="number" value="0" class="form-control" id="val-password" name="reg-students" disabled>
@@ -62,7 +105,7 @@
 
                             <div class="mb-4">
                                 <label class="form-label" for="val-password">Total Registered Courses <span class="text-danger">*</span></label>
-                                <input type="number" value="0" class="form-control" id="val-password" name="reg-courses" disabled>
+                                <input type="number" value="{{ $courses }}" class="form-control" id="val-password" name="reg-courses" disabled>
                             </div>
 
                             <div class="mb-4">

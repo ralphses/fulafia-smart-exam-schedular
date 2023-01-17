@@ -13,16 +13,14 @@
                                     Welcome to SmartEXAMS</p>
                                 <h1 class="display-1 mb-4 animated slideInDown">We ensure stress free exam planning
                                 </h1>
-                                <a href="#registerSchool" class="btn btn-primary py-3 px-5 animated slideInDown">Register Your School</a>
-                                <a href="{{ route('login') }}" class="btn btn-primary py-3 px-5 animated slideInDown">Login</a>
-
+                                <a href="#registerSchool" class="btn btn-primary py-3 px-5 animated slideInDown">Start Here!</a>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
             <div class="carousel-item">
-                <img class="w-100" src="landing-assets/img/carousel-2.jpg" alt="Image">
+                <img class="w-100" src="{{ asset('landing-assets/img/carousel-2.jpg') }}" alt="Image">
                 <div class="carousel-caption">
                     <div class="container">
                         <div class="row justify-content-start">
@@ -31,8 +29,7 @@
                                     class="d-inline-block border border-white rounded text-primary fw-semi-bold py-1 px-3 animated slideInDown">
                                     Welcome to SmartEXAMS</p>
                                 <h1 class="display-1 mb-4 animated slideInDown">Smart Timetable and Exam Scheduling</h1>
-                                <a href="#registerSchool" class="btn btn-primary py-3 px-5 animated slideInDown">Get Started</a>
-                                <a href="" class="btn btn-primary py-3 px-5 animated slideInDown">Login</a>
+                                <a href="#registerSchool" class="btn btn-primary py-3 px-5 animated slideInDown">Start Here!</a>
                             </div>
                         </div>
                     </div>

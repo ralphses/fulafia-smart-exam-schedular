@@ -53,6 +53,10 @@
                                 <button class="btn btn-primary w-100 py-3" type="submit">Submit Now</button>
                             </div>
 
+                            <div class="d-flex justify-content-between mt-4">
+                                <p>Already Registered? Login <a class="" href="{{ route('login') }}">here</a></p>
+                            </div>
+
                         </div>
 
                     </form>
