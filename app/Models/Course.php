@@ -17,6 +17,8 @@ class Course extends Model
         'code',
         'unit',
         'active',
+        'assigned',
+        'general',
         'semester',
         'level',
     ];

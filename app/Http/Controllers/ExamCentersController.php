@@ -49,6 +49,7 @@ class ExamCentersController extends Controller
             'name' => $request->get('center-name'),
             'capacity' => $request->get('center-capacity'),
             'school_id' => Auth::user()->school->id,
+            'free_space' => 0,
         ]);
 
         session()->flash('exam-center', 'New center added successfully!');

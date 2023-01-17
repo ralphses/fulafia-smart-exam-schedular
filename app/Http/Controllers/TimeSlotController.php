@@ -135,7 +135,7 @@ class TimeSlotController extends Controller
         return ($first > 12) ? $first - 12 . ':' .$thisTime[1] . 'PM' : $first . ':' .$thisTime[1] . 'AM';
     }
 
-    private function findDuration(DateTime $startTime, DateTime $stopTime)
+    private function findDuration(DateTime $startTime, DateTime $stopTime): string
     {
         $dateInterval = $startTime->diff($stopTime);
 

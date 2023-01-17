@@ -118,7 +118,7 @@
 
                             <div class="mb-4">
                                 <label class="form-label" for="faculty">Mode of course selection</label>
-                                <select class="form-select" id="faculty" name="example-select">
+                                <select class="form-select" id="faculty" name="course-mode">
                                     <option selected value="all">All Available Courses</option>
                                     <option value="faculty">Faculty</option>
                                     <option value="department">Department</option>
@@ -154,7 +154,7 @@
                             </div>
                             <div class="mb-4" id="dept-course" style="display: none">
                                 <label class="form-label" for="example-select">Department</label>
-                                <select class="form-select" id="example-select" name="example-select">
+                                <select class="form-select" id="example-select" name="dept_course">
                                     <option selected>select department</option>
                                     @foreach($info['department'] as $dept)
                                         <option value="{{ $dept->id }}">{{ $dept->name }}</option>
@@ -265,32 +265,32 @@
                                     </div>
 
                                     <div class="form-check form-switch form-check-inline">
-                                        <input class="form-check-input days" id="exam-days" type="checkbox" value="monday" name="exam-days[]">
+                                        <input class="form-check-input days" id="exam-days" type="checkbox" value="Monday" name="exam-days[]">
                                         <label class="form-check-label" for="exam-days">Monday</label>
                                     </div>
 
                                     <div class="form-check form-switch form-check-inline">
-                                        <input class="form-check-input days" id="exam-days" type="checkbox" value="tuesday" name="exam-days[]">
+                                        <input class="form-check-input days" id="exam-days" type="checkbox" value="Tuesday" name="exam-days[]">
                                         <label class="form-check-label" for="exam-days">Tuesday</label>
                                     </div>
 
                                     <div class="form-check form-switch form-check-inline">
-                                        <input class="form-check-input days" id="exam-days" type="checkbox" value="wednesday" name="exam-days[]">
+                                        <input class="form-check-input days" id="exam-days" type="checkbox" value="Wednesday" name="exam-days[]">
                                         <label class="form-check-label" for="exam-days">Wednesday</label>
                                     </div>
 
                                     <div class="form-check form-switch form-check-inline">
-                                        <input class="form-check-input days" id="exam-days" type="checkbox" value="thursday" name="exam-days[]">
+                                        <input class="form-check-input days" id="exam-days" type="checkbox" value="Thursday" name="exam-days[]">
                                         <label class="form-check-label" for="exam-days">Thursday</label>
                                     </div>
 
                                     <div class="form-check form-switch form-check-inline">
-                                        <input class="form-check-input days" id="exam-days" type="checkbox" value="friday" name="exam-days[]">
+                                        <input class="form-check-input days" id="exam-days" type="checkbox" value="Friday" name="exam-days[]">
                                         <label class="form-check-label" for="exam-days">Friday</label>
                                     </div>
 
                                     <div class="form-check form-switch form-check-inline">
-                                        <input class="form-check-input days" id="exam-days" type="checkbox" value="saturday" name="exam-days[]">
+                                        <input class="form-check-input days" id="exam-days" type="checkbox" value="Saturday" name="exam-days[]">
                                         <label class="form-check-label" for="exam-days">Saturday</label>
                                     </div>
 

@@ -6,23 +6,12 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    protected $fillable = [
-        'exam_days',
-        'instructions',
-        'filePath',
-        'stop_date',
-        'start_date',
-        'session',
-        'semester',
-        'school_name',
-        'school_id'
-    ];
     /**
      * Run the migrations.
      *
      * @return void
      */
-    public function up()
+    public function up(): void
     {
         Schema::create('time_tables', function (Blueprint $table) {
 
@@ -51,7 +40,7 @@ return new class extends Migration
      *
      * @return void
      */
-    public function down()
+    public function down(): void
     {
         Schema::dropIfExists('time_tables');
     }

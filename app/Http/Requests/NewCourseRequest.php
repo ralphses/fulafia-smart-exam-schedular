@@ -30,6 +30,7 @@ class NewCourseRequest extends FormRequest
             'course-code'  => ['required', 'string', Rule::unique('courses', 'code')],
             'course-unit'  => ['required', 'integer'],
             'course-semester'  => ['required', Rule::in(['first', 'second'])],
+            'course-general'  => ['required', Rule::in(['0', '1'])],
             'course-level'  => ['required', 'string'],
         ];
     }

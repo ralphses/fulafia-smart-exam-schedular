@@ -21,6 +21,7 @@ return new class extends Migration
             $table->string('name');
 
             $table->unsignedInteger('capacity');
+            $table->unsignedInteger('free_space');
 
             $table->boolean('active')->default(true);
 

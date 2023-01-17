@@ -27,6 +27,8 @@ return new class extends Migration
             $table->integer('unit');
 
             $table->boolean('active')->default(true);
+            $table->boolean('assigned')->default(false);
+            $table->boolean('general')->default(false);
 
             $table->foreign('department_id')->references('id')->on('departments')->cascadeOnDelete()->cascadeOnUpdate();
             $table->timestamps();

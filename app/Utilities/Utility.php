@@ -17,4 +17,13 @@ class Utility
         '900 Level',
     ];
 
+    public const ALLOWED_DAYS = [
+        'Monday',
+        'Tuesday',
+        'Wednesday',
+        'Thursday',
+        'Friday',
+        'Saturday',
+    ];
+
 }

@@ -132,6 +132,19 @@
                                 @endif
                             </div>
 
+                            <div class="form-floating mb-4">
+                                <select class="form-select" id="example-select-floating" name="course-general"
+                                        aria-label="Select Course Semester">
+                                    <option selected value="0">No</option>
+                                    <option value="1">Yes</option>
+                                </select>
+                                <label for="example-select-floating">General Course?</label>
+
+                                @if($errors->any('course-general'))
+                                    <p style="color: red; font-size: small">{{ $errors->first('course-general') }}</p>
+                                @endif
+                            </div>
+
                         </div>
                     </div>
                     <!-- END Regular -->

@@ -14,6 +14,7 @@ class ExamCenters extends Model
         'code',
         'name',
         'capacity',
+        'free_space',
         'active',
         'school_id'
     ];

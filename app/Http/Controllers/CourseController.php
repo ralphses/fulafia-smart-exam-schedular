@@ -70,6 +70,7 @@ class CourseController extends Controller
             'code' => $request->get('course-code'),
             'unit' => $request->get('course-unit'),
             'level' => $request->get('course-level'),
+            'general' => $request->get('course-general'),
             'semester' => $request->get('course-semester'),
         ]);
 

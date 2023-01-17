@@ -13,7 +13,7 @@ class ExamDay extends Model
 
     protected $fillable = [
         'date',
-        'week_ay',
+        'week_day',
         'time_table_id',
     ];
 
