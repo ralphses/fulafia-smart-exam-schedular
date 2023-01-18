@@ -5,22 +5,30 @@ namespace App\Http\Controllers;
 use App\Models\Course;
 use App\Models\Department;
 use App\Models\ExamCenters;
+use App\Models\Models\Center;
+use App\Models\Models\Exam;
 use App\Models\Models\ExamDay;
+use App\Models\Models\ExamUnit;
+use App\Models\Student;
+use App\Models\TimeSlot;
 use App\Models\TImeTable;
 use App\Utilities\Utility;
 use DateTime;
+use Exception;
 use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Contracts\View\Factory;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Auth;
+use Ramsey\Collection\Collection;
 
 class TimeTableController extends Controller
 {
     /**
      * Display a listing of the resource.
      *
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
     public function index()
     {
@@ -57,9 +65,9 @@ class TimeTableController extends Controller
     /**
      * Store a newly created resource in storage.
      *
-     * @param \Illuminate\Http\Request $request
-     * @return \Illuminate\Http\Response
-     * @throws \Exception
+     * @param Request $request
+     * @return Response
+     * @throws Exception
      */
     public function store(Request $request)
     {
@@ -80,8 +88,10 @@ class TimeTableController extends Controller
         //Get Selected Courses
         $courses = $this->getCourses($request);
 
-        //Sort courses by number of students
-        $courses = $this->sortCoursesByStudents($courses);
+        //Sort courses by number of students or general courses first (if selected)
+        $courses = ($request->get('level-sort') === "Yes") ?
+            $this->generalCoursesFirst($courses) :
+            $this->sortCoursesByStudents($courses);
 
         //Sort exam centers according to capcity
         $centers = $this->sortCentersByCapacity($centers);
@@ -111,52 +121,172 @@ class TimeTableController extends Controller
         //Get Instructions
         $instructions = preg_split('/\r\n/', $request->get('instructions'));
 
-        dd($instructions);
+        //Get no of maximum number of courses per exam
+        $noOfCoursesPerExam = $request->get('no-course-exam');
+
+        //Get selected Timeslots
+        $timeSlots = TimeSlot::whereIn('id', $request->get('time-slots'))
+            ->get()
+            ->map(function ($timeSLot) { return $timeSLot->name;})
+            ->all();
+
+        //Create a new Timetable
+        $timeTable = new TImeTable(
+            [
+                'instructions' => implode('|', $instructions),
+                'exam_days' => implode('|', $allowedDays),
+                'planner' => $planner,
+                'stop_date' => $stop,
+                'start_date' => $start,
+                'session' => $session,
+                'semester' => $semester,
+                'school_name' => $schoolName,
+                'school_id' => Auth::user()->school->id
+            ]
+        );
+
+        //Set timetable timeslots
+        $timeTable->setTimeSlots($timeSlots);
+
+        //Build exam days for timetable
+        $allExamDays = $this->buildExamDays($courses, $centers, $timeTable, $examDays, $noOfCoursesPerExam);
+
+        dd($timeTable);
     }
 
-    /**
-     * Display the specified resource.
-     *
-     * @param  \App\Models\TImeTable  $tImeTable
-     * @return \Illuminate\Http\Response
-     */
-    public function show(TImeTable $tImeTable)
+
+    private function buildExamDaysOld(array $courses, array $centers, TImeTable $timeTable, array $examDays, int $noOfCoursesPerExam): array
     {
-        //
+        $allExamDays = [];
+
+        $courses = collect($courses)->map(function ($course) {
+            $students = $course->students->map(function ($std) {
+                return $std->id;
+            });
+            return new \App\Models\Models\Course($course->id, $students->all(), $course->title, false);
+        }
+        )->filter(function ($value) { return count($value->getStudents()) >0;});
+
+//        dd($courses);
+
+        $centers = collect($centers)->map(function ($center) { return new Center($center->id, $center->name, $center->capacity); });
+        $examDays = collect($examDays);
+
+        $totalNoOfStudents = Student::whereIn('faculty_id', Auth::user()->school->faculties->map(function ($faculty) {return $faculty->id;}))->get()->count();
+
+//        dd($courses);
+        foreach ($examDays as $examDay) {
+
+            foreach ($timeTable->getTimeSlots() as $timeSlot) {
+
+                $currentStudents = [];
+                $examUnits = [];
+
+                foreach ($centers as $center) {
+
+                    for ($i = 0; $i < $noOfCoursesPerExam; $i++) {
+
+                        foreach ($courses as $course) {
+                            if(!$course->isAssigned()) {
+                                if(count(array_intersect($course->getStudents(), $currentStudents)) == 0) {
+                                    $xmUnit = new ExamUnit($center->getName());
+                                    $xmUnit->addCourses($course->getId());
+
+                                    $examUnits[] = $xmUnit;
+
+                                    $currentStudents = array_merge($currentStudents, $course->getStudents());
+
+                                    $course->setAssigned(true);
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                }
+
+                $exam = new Exam($currentStudents, $examUnits);
+                $exam->setTimeSlot($timeSlot);
+
+                $examDay->addExams($exam);
+
+            }
+            //Add examDay to timetable
+            $timeTable->addExamDays($examDay);
+
+
+        }
+
+        echo '<pre>';
+        var_dump($timeTable->getExamDays());
+        echo '</pre>';
+
+//        dd($courses);
+
+//        dd($timeTable->getExamDays());
+
+
+        return $allExamDays;
+
     }
 
-    /**
-     * Show the form for editing the specified resource.
-     *
-     * @param  \App\Models\TImeTable  $tImeTable
-     * @return \Illuminate\Http\Response
-     */
-    public function edit(TImeTable $tImeTable)
+    private function buildExamDays(array $courses, array $centers, TImeTable $timeTable, array $examDays, int $noOfCoursesPerExam): array
     {
-        //
-    }
+        $allExamDays = [];
 
-    /**
-     * Update the specified resource in storage.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @param  \App\Models\TImeTable  $tImeTable
-     * @return \Illuminate\Http\Response
-     */
-    public function update(Request $request, TImeTable $tImeTable)
-    {
-        //
-    }
+        $courses = collect($courses)->map(function ($course) {
+            $students = $course->students->map(function ($std) {
+                return $std->id;
+            });
+            return new \App\Models\Models\Course($course->id, $students->all(), $course->title, false);
+        }
+        )->filter(function ($value) { return count($value->getStudents()) > 0;});
 
-    /**
-     * Remove the specified resource from storage.
-     *
-     * @param  \App\Models\TImeTable  $tImeTable
-     * @return \Illuminate\Http\Response
-     */
-    public function destroy(TImeTable $tImeTable)
-    {
-        //
+
+        $centers = collect($centers)->map(function ($center) { return new Center($center->id, $center->name, $center->capacity); });
+        $examDays = collect($examDays);
+
+
+        foreach ($examDays as $examDay) {
+
+            if($centers->count() < 1) break;
+
+            foreach ($timeTable->getTimeSlots() as $timeSlot) { //Exam day here
+
+                $currentStudents = [];
+                $examUnits = [];
+
+                for ($i = 0; $i < $noOfCoursesPerExam; $i++) {
+
+                    $center = $centers->pop();
+
+                    while (!is_null($center) AND $center->getFreeSpace() > 0) {
+
+                        $course = $this->nextCourse($courses, $currentStudents);
+
+                        if (is_null($course)) break;
+
+                        $xmUnit = new ExamUnit($center->getName());
+                        $xmUnit->addCourses($course->getId());
+
+                        $examUnits[] = $xmUnit;
+
+                        $center->setFreeSpace($center->getFreeSpace() - count($course->getStudents()));
+                    }
+
+                }
+
+                $exam = new Exam($currentStudents, $examUnits);
+                $exam->setTimeSlot($timeSlot);
+
+                $examDay->addExams($exam);
+            }
+
+            //Add examDay to timetable
+            $timeTable->addExamDays($examDay);
+        }
+
+        return $allExamDays;
+
     }
 
     private function getCourses(Request $request): array
@@ -179,9 +309,8 @@ class TimeTableController extends Controller
         return $courses->all();
     }
 
-
     /**
-     * @throws \Exception
+     * @throws Exception
      */
     private function getExamDates(string $startDate, string $stopDate): array
     {
@@ -280,7 +409,7 @@ class TimeTableController extends Controller
         return $courses;
     }
 
-    private function sortCentersByCapacity(array $centers)
+    private function sortCentersByCapacity(array $centers): array
     {
         for($i = 0; $i < count($centers); $i++) {
             for ($j = 0; $j < count($centers) - 1; $j++) {
@@ -292,5 +421,34 @@ class TimeTableController extends Controller
             }
         }
         return $centers;
+    }
+
+    private function generalCoursesFirst(array $courses): array
+    {
+        for($i = 0; $i < count($courses); $i++) {
+            for ($j = 0; $j < count($courses) - 1; $j++) {
+                if ($courses[$j]->general < $courses[$j + 1]->general) {
+                    $var = $courses[$j];
+                    $courses[$j] = $courses[$j + 1];
+                    $courses[$j + 1] = $var;
+                }
+            }
+        }
+        return $courses;
+
+    }
+
+    private function nextCourse($courses, array $currentStudents) {
+
+        $course = $courses->pop();
+
+        if(is_null($course)) return null;
+
+        while (count(array_intersect($course->getStudents(), $currentStudents)) != 0) {
+            $courses->prepend($course);
+            $course = $courses->pop();
+        }
+
+        return $course;
     }
 }

@@ -168,7 +168,7 @@
 
                             <div class="mb-4">
                                 <label class="form-label" for="no-courses-exam">Max. number of courses per exam time<span class="text-danger">*</span></label>
-                                <input type="number" class="form-control" id="no-courses-exam" name="session" value="{{ old('no-courses-exam') ?? 4 }}">
+                                <input type="number" class="form-control" id="no-courses-exam" name="no-course-exam" value="{{ old('no-courses-exam') ?? 4 }}">
 
                                 @if($errors->any('no-courses-exam'))
                                     <p style="color: red; font-size: medium">{{ $errors->first('no-courses-exam') }}</p>

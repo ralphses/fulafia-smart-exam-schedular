@@ -4,14 +4,9 @@ namespace App\Models\Models;
 
 class ExamDay
 {
-    /**
-     * @var string
-     */
     private string $date;
-    /**
-     * @var string
-     */
     private string $weekDay;
+    private array $exams;
 
     /**
      * @param string $date
@@ -55,7 +50,21 @@ class ExamDay
         $this->weekDay = $weekDay;
     }
 
+    /**
+     * @return array
+     */
+    public function getExams(): array
+    {
+        return $this->exams;
+    }
 
+    /**
+     * @param Exam $exam
+     */
+    public function addExams(Exam $exam): void
+    {
+        $this->exams[] = $exam;
+    }
 
 
 }

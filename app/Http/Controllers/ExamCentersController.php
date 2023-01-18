@@ -55,8 +55,6 @@ class ExamCentersController extends Controller
         session()->flash('exam-center', 'New center added successfully!');
 
         return redirect(route('exam_center.all'));
-
-
     }
 
     /**
@@ -65,20 +63,9 @@ class ExamCentersController extends Controller
      * @param  \App\Models\ExamCenters  $examCenters
      * @return Response
      */
-    public function show(int $id)
+    public function show(int $id): Response
     {
         return response()->view('exam-center-update', ['center' => ExamCenters::find($id)]);
-    }
-
-    /**
-     * Show the form for editing the specified resource.
-     *
-     * @param  \App\Models\ExamCenters  $examCenters
-     * @return Response
-     */
-    public function edit(ExamCenters $examCenters)
-    {
-        //
     }
 
     /**
@@ -88,7 +75,7 @@ class ExamCentersController extends Controller
      * @param int $id
      * @return Application|Redirector|RedirectResponse
      */
-    public function update(Request $request, int $id)
+    public function update(Request $request, int $id): Redirector|RedirectResponse|Application
     {
 
         $request->validate([
@@ -114,7 +101,7 @@ class ExamCentersController extends Controller
     /**
      * Remove the specified resource from storage.
      *
-     * @param  \App\Models\ExamCenters  $examCenters
+     * @param int $id
      * @return Application|Redirector|RedirectResponse
      */
     public function destroy(int $id): Redirector|RedirectResponse|Application

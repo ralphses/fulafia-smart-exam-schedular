@@ -22,8 +22,10 @@ return new class extends Migration
 
             $table->string('exam_days');
             $table->string('session', 20);
+            $table->string('semester', 20);
             $table->string('school_name');
             $table->string('filePath')->nullable(true);
+            $table->string('planner')->nullable(true);
             $table->string('instructions', 500);
 
             $table->unsignedBigInteger('school_id');
