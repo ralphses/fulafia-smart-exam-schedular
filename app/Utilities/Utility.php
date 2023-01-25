@@ -26,4 +26,6 @@ class Utility
         'Saturday',
     ];
 
+    public static array $currentStudents = [];
+
 }

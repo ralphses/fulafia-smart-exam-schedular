@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Database\Factories\CourseFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -32,4 +33,11 @@ class Course extends Model
     {
         return $this->belongsToMany(Student::class, 'course_student');
     }
+
+    protected static function newFactory(): CourseFactory
+    {
+        return CourseFactory::new();
+    }
+
+
 }

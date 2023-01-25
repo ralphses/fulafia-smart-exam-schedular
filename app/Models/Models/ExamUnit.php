@@ -8,16 +8,6 @@ class ExamUnit
     private array $courses;
 
     /**
-     * @param string $venue
-     * @param array $courses
-     */
-    public function __construct(string $venue)
-    {
-        $this->venue = $venue;
-        $this->courses = [];
-    }
-
-    /**
      * @return string
      */
     public function getVenue(): string

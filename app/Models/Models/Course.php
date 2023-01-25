@@ -8,6 +8,7 @@ class Course
     private array $students;
     private string $title;
     private bool $assigned;
+    private bool $general;
 
     /**
      * @param int $id
@@ -15,12 +16,13 @@ class Course
      * @param string $title
      * @param bool $assigned
      */
-    public function __construct(int $id, array $students, string $title, bool $assigned)
+    public function __construct(int $id, array $students, string $title, bool $assigned, bool $general)
     {
         $this->id = $id;
         $this->students = $students;
         $this->title = $title;
         $this->assigned = $assigned;
+        $this->general = $general;
     }
 
 
@@ -87,6 +89,23 @@ class Course
     {
         $this->students = $students;
     }
+
+    /**
+     * @return bool
+     */
+    public function isGeneral(): bool
+    {
+        return $this->general;
+    }
+
+    /**
+     * @param bool $general
+     */
+    public function setGeneral(bool $general): void
+    {
+        $this->general = $general;
+    }
+
 
 
 

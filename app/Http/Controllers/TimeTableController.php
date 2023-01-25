@@ -9,7 +9,6 @@ use App\Models\Models\Center;
 use App\Models\Models\Exam;
 use App\Models\Models\ExamDay;
 use App\Models\Models\ExamUnit;
-use App\Models\Student;
 use App\Models\TimeSlot;
 use App\Models\TImeTable;
 use App\Utilities\Utility;
@@ -20,8 +19,9 @@ use Illuminate\Contracts\View\Factory;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
+use Illuminate\Support\Collection as Collections;
 use Illuminate\Support\Facades\Auth;
-use Ramsey\Collection\Collection;
+use JetBrains\PhpStorm\ArrayShape;
 
 class TimeTableController extends Controller
 {
@@ -127,7 +127,7 @@ class TimeTableController extends Controller
         //Get selected Timeslots
         $timeSlots = TimeSlot::whereIn('id', $request->get('time-slots'))
             ->get()
-            ->map(function ($timeSLot) { return $timeSLot->name;})
+            ->map(function ($timeSLot) { return $timeSLot->name; })
             ->all();
 
         //Create a new Timetable
@@ -149,13 +149,13 @@ class TimeTableController extends Controller
         $timeTable->setTimeSlots($timeSlots);
 
         //Build exam days for timetable
-        $allExamDays = $this->buildExamDays($courses, $centers, $timeTable, $examDays, $noOfCoursesPerExam);
+        $buildResult = $this->buildExamDays($courses, $centers, $timeTable, $examDays, $noOfCoursesPerExam);
 
-        dd($timeTable);
+        dd($buildResult);
     }
 
-
-    private function buildExamDaysOld(array $courses, array $centers, TImeTable $timeTable, array $examDays, int $noOfCoursesPerExam): array
+    #[ArrayShape(['examDays' => "array", 'unAssignedCourses' => "mixed"])]
+    private function buildExamDays(array $courses, array $centers, TImeTable $timeTable, array $examDays, int $noOfExamUnits): array
     {
         $allExamDays = [];
 
@@ -163,131 +163,151 @@ class TimeTableController extends Controller
             $students = $course->students->map(function ($std) {
                 return $std->id;
             });
-            return new \App\Models\Models\Course($course->id, $students->all(), $course->title, false);
-        }
-        )->filter(function ($value) { return count($value->getStudents()) >0;});
-
-//        dd($courses);
-
-        $centers = collect($centers)->map(function ($center) { return new Center($center->id, $center->name, $center->capacity); });
-        $examDays = collect($examDays);
-
-        $totalNoOfStudents = Student::whereIn('faculty_id', Auth::user()->school->faculties->map(function ($faculty) {return $faculty->id;}))->get()->count();
-
-//        dd($courses);
-        foreach ($examDays as $examDay) {
-
-            foreach ($timeTable->getTimeSlots() as $timeSlot) {
-
-                $currentStudents = [];
-                $examUnits = [];
-
-                foreach ($centers as $center) {
-
-                    for ($i = 0; $i < $noOfCoursesPerExam; $i++) {
-
-                        foreach ($courses as $course) {
-                            if(!$course->isAssigned()) {
-                                if(count(array_intersect($course->getStudents(), $currentStudents)) == 0) {
-                                    $xmUnit = new ExamUnit($center->getName());
-                                    $xmUnit->addCourses($course->getId());
-
-                                    $examUnits[] = $xmUnit;
-
-                                    $currentStudents = array_merge($currentStudents, $course->getStudents());
-
-                                    $course->setAssigned(true);
-                                    break;
-                                }
-                            }
-                        }
-                    }
-                }
-
-                $exam = new Exam($currentStudents, $examUnits);
-                $exam->setTimeSlot($timeSlot);
-
-                $examDay->addExams($exam);
-
-            }
-            //Add examDay to timetable
-            $timeTable->addExamDays($examDay);
-
-
-        }
-
-        echo '<pre>';
-        var_dump($timeTable->getExamDays());
-        echo '</pre>';
-
-//        dd($courses);
-
-//        dd($timeTable->getExamDays());
-
-
-        return $allExamDays;
-
-    }
-
-    private function buildExamDays(array $courses, array $centers, TImeTable $timeTable, array $examDays, int $noOfCoursesPerExam): array
-    {
-        $allExamDays = [];
-
-        $courses = collect($courses)->map(function ($course) {
-            $students = $course->students->map(function ($std) {
-                return $std->id;
-            });
-            return new \App\Models\Models\Course($course->id, $students->all(), $course->title, false);
+            return new \App\Models\Models\Course($course->id, $students->all(), $course->title, false, $course->general);
         }
         )->filter(function ($value) { return count($value->getStudents()) > 0;});
 
+        $centers = collect($centers)
+            ->map(function ($center) {
+                $ce = new Center($center->id, $center->name, $center->capacity);
+                $ce->setFilled(false);
+                return $ce;
+            });
 
-        $centers = collect($centers)->map(function ($center) { return new Center($center->id, $center->name, $center->capacity); });
         $examDays = collect($examDays);
 
+        $dailyStudents = [];
+        $checkDailyStudents = 0;
 
         foreach ($examDays as $examDay) {
 
-            if($centers->count() < 1) break;
-
+            //Create an Exam for specific timeslot
             foreach ($timeTable->getTimeSlots() as $timeSlot) { //Exam day here
 
-                $currentStudents = [];
-                $examUnits = [];
+                $allCenters = collect($centers);
 
-                for ($i = 0; $i < $noOfCoursesPerExam; $i++) {
+                Utility::$currentStudents = []; // set already filled students for this timeslot to empty
+                $examUnits = []; // create array to store several exam units - venue and list of courses
 
-                    $center = $centers->pop();
+                $currentRequiredSpace = 0;
 
-                    while (!is_null($center) AND $center->getFreeSpace() > 0) {
+                //Add Exam units to an Exam
+                for ($i = 0; $i < $noOfExamUnits; $i++) {
 
-                        $course = $this->nextCourse($courses, $currentStudents);
+                    $xmUnit = new ExamUnit(); // Create a new exam unit
+
+                    $venue = $this->getCenter($allCenters, $currentRequiredSpace);
+
+                    if(is_null($venue)) break;
+
+                    $xmUnit->setVenue($venue->getName());
+
+                    $currentCourseId = 0;
+
+                    //Todo: Add Courses to this venue
+
+                    do {
+
+                        //Get a course with students not already assigned for this timeslot
+                        $course = $this->nextCourse($courses, Utility::$currentStudents, $dailyStudents, $currentCourseId);
 
                         if (is_null($course)) break;
 
-                        $xmUnit = new ExamUnit($center->getName());
-                        $xmUnit->addCourses($course->getId());
+                        if($venue->getFreeSpace() < count($course->getStudents())) {
 
-                        $examUnits[] = $xmUnit;
+                            //Get another venue with required size
+                            $venue = $this->getCenter($allCenters, count($course->getStudents()));
 
-                        $center->setFreeSpace($center->getFreeSpace() - count($course->getStudents()));
+                            //Spread students across available venues if venue with required size not available
+                            if(is_null($venue)) {
+
+                                $requiredSpace = count($course->getStudents());
+
+                                while ($requiredSpace > 0) {
+                                    $venue = $this->getNextAvailableCenter($allCenters, $requiredSpace);
+
+                                    if(!$venue) {
+                                        break;
+                                    }
+
+                                    $newExamUnit = new ExamUnit();
+
+                                    $newExamUnit->setVenue($venue->getName());
+                                    $newExamUnit->addCourses($course->getId());
+
+                                    $examUnits[] = $newExamUnit;
+
+                                    $requiredSpace = $requiredSpace - $venue->getFreeSpace();
+
+                                    $venue->setFilled(true);
+                                }
+
+                            }
+                            else {
+
+                                $newExamUnit = new ExamUnit();
+
+                                $newExamUnit->setVenue($venue->getName());
+                                $newExamUnit->addCourses($course->getId());
+
+                                $examUnits[] = $newExamUnit;
+
+                                $venue->setFilled(true);
+
+                                $checkDailyStudents++;
+                                if($checkDailyStudents % 2 == 0) {
+                                    $dailyStudents = array_merge($dailyStudents, $course->getStudents());
+                                }
+                            }
+
+                        } else {
+                            $xmUnit->addCourses($course->getId());
+                        }
+
+                        Utility::$currentStudents = array_merge(Utility::$currentStudents, $course->getStudents());
+
+                        if(!$venue) {
+                            continue;
+                        }
+                        $venue->setFreeSpace($venue->getFreeSpace() - count($course->getStudents()));
+                        $course->setAssigned(true);
+
+                        echo count($course->getStudents()). ' '. $venue->getName() . ' ' . $venue->getFreeSpace() . ' >>> '.$timeSlot . '----'. $examDay->getWeekDay(). '<br>';
                     }
 
+                    while($venue AND $venue->getFreeSpace() > 0);
+                    //End of add courses for a unit
+
+                    $examUnits[] = $xmUnit;
                 }
 
-                $exam = new Exam($currentStudents, $examUnits);
+                //Reset all centers at the end of each time slot
+                foreach ($allCenters as $cen) {
+                    $cen->setFreeSpace($cen->getCapacity());
+                    $cen->setFilled(false);
+                }
+
+                $exam = new Exam($examUnits);
+                $exam->setStudents(Utility::$currentStudents);
                 $exam->setTimeSlot($timeSlot);
 
                 $examDay->addExams($exam);
             }
 
-            //Add examDay to timetable
-            $timeTable->addExamDays($examDay);
+            //Add examDay to allExamDays array
+            $allExamDays[] = $examDay;
         }
 
-        return $allExamDays;
+        return
+            [
+                'examDays' => $allExamDays,
+                'unAssignedCourses' => collect($courses)
+                    ->filter(function ($c) { return !$c->isAssigned();})
+                    ->all()
+            ];
 
     }
+
 
     private function getCourses(Request $request): array
     {
@@ -349,7 +369,6 @@ class TimeTableController extends Controller
                 $newDates[] = $date;
             }
         }
-
         return $newDates;
     }
 
@@ -438,17 +457,67 @@ class TimeTableController extends Controller
 
     }
 
-    private function nextCourse($courses, array $currentStudents) {
+    private function nextCourse($courses, array $currentStudents, $dailyStudents, $currentCourseId) {
 
-        $course = $courses->pop();
+        foreach ($courses as $cours) {
 
-        if(is_null($course)) return null;
-
-        while (count(array_intersect($course->getStudents(), $currentStudents)) != 0) {
-            $courses->prepend($course);
-            $course = $courses->pop();
+            if(
+                !$cours->isAssigned() AND
+                count(array_intersect($cours->getStudents(), $currentStudents)) < 1 AND
+                $cours->getId() != $currentCourseId AND
+                count(array_intersect($cours->getStudents(), $dailyStudents)) < 1) {
+                return $cours;
+            }
         }
 
-        return $course;
+    }
+
+    private function nextCourseOld($courses, array $currentStudents, $currentCourseId) {
+
+        foreach ($courses as $cours) {
+
+            if(!$cours->isAssigned() AND count(array_intersect($cours->getStudents(), $currentStudents)) < 1 AND $cours->getId() != $currentCourseId) {
+                return $cours;
+            }
+        }
+
+    }
+
+    /**
+     * @param Collections $allCenters
+     * @param int $requiredSpace
+     * @return false|mixed
+     */
+    private function getNextAvailableCenter(Collections $allCenters, int $requiredSpace): mixed
+    {
+        $total = 0;
+
+        $allCenters = $allCenters->filter(function ($v) {return !$v->isFilled();});
+
+        foreach ($allCenters->all() as $center) {
+            $total = $total + $center->getFreeSpace();
+        }
+
+        if($total < $requiredSpace) {
+            return false;
+        }
+
+        else {
+            return
+                $allCenters
+                    ->sort(function ($val1, $val2) { return $val1->getFreeSpace() > $val2->getFreeSpace(); })
+                    ->filter(function ($va) {return !$va->isFilled();})
+                    ->first();
+        }
+
+    }
+
+    private function getCenter(Collections $allCenters, int $currentRequiredSpace)
+    {
+        return $allCenters
+            ->map(function ($c) use ($currentRequiredSpace) { return ($c->getFreeSpace() >= $currentRequiredSpace) ? $c : null; })
+            ->filter(function ($f) { return $f != null;})
+            ->sort(function ($v1, $v2) { return $v1->getFreeSpace() < $v2->getFreeSpace();})
+            ->first();
     }
 }

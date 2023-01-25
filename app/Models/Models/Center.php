@@ -8,6 +8,7 @@ class Center
     private int $capacity;
     private int $freeSpace;
     private string $name;
+    private bool $filled;
 
     /**
      * @param int $id
@@ -86,6 +87,24 @@ class Center
     {
         $this->freeSpace = $freeSpace;
     }
+
+    /**
+     * @return bool
+     */
+    public function isFilled(): bool
+    {
+        return $this->filled;
+    }
+
+    /**
+     * @param bool $filled
+     */
+    public function setFilled(bool $filled): void
+    {
+        $this->filled = $filled;
+    }
+
+
 
 
 

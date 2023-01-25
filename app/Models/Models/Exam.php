@@ -13,9 +13,8 @@ class Exam
      * @param array $students
      * @param array $examUnits
      */
-    public function __construct(array $students, array $examUnits)
+    public function __construct(array $examUnits)
     {
-        $this->students = $students;
         $this->examUnits = $examUnits;
     }
 

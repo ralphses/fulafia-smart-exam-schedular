@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Database\Factories\DepartmentFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -26,4 +27,11 @@ class Department extends Model
     {
         return $this->hasMany(Student::class);
     }
+
+    protected static function newFactory()
+    {
+        return DepartmentFactory::new();
+    }
+
+
 }

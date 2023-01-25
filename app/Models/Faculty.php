@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Database\Factories\FacultyFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -32,4 +33,11 @@ class Faculty extends Model
     {
         return $this->hasMany(Department::class);
     }
+
+    protected static function newFactory(): FacultyFactory
+    {
+        return FacultyFactory::new();
+    }
+
+
 }
