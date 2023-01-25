@@ -28,7 +28,7 @@ class ExamUnit
      */
     public function getCourses(): array
     {
-        return $this->courses;
+        return $this->courses ?? [];
     }
 
     /**

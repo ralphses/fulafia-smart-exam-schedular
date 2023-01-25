@@ -151,7 +151,11 @@ class TimeTableController extends Controller
         //Build exam days for timetable
         $buildResult = $this->buildExamDays($courses, $centers, $timeTable, $examDays, $noOfCoursesPerExam);
 
-        dd($buildResult);
+        $processedExamDays = $buildResult['examDays'];
+
+        $processedExamDays = $this->sanitizeExamDays($processedExamDays);
+        dd($processedExamDays);
+
     }
 
     #[ArrayShape(['examDays' => "array", 'unAssignedCourses' => "mixed"])]
@@ -472,16 +476,6 @@ class TimeTableController extends Controller
 
     }
 
-    private function nextCourseOld($courses, array $currentStudents, $currentCourseId) {
-
-        foreach ($courses as $cours) {
-
-            if(!$cours->isAssigned() AND count(array_intersect($cours->getStudents(), $currentStudents)) < 1 AND $cours->getId() != $currentCourseId) {
-                return $cours;
-            }
-        }
-
-    }
 
     /**
      * @param Collections $allCenters
@@ -519,5 +513,45 @@ class TimeTableController extends Controller
             ->filter(function ($f) { return $f != null;})
             ->sort(function ($v1, $v2) { return $v1->getFreeSpace() < $v2->getFreeSpace();})
             ->first();
+    }
+
+    private function sanitizeExamDays(array $processedExamDays)
+    {
+        return
+            collect($processedExamDays)->filter(function ($day) {
+                $available = true;
+                foreach ($day->getExams() as $exam) {
+                    $available = count($exam->getStudents()) > 0;
+                    if($available) break;
+                }
+                return $available;
+            })->map(function ($value) {
+
+                $newExamDay = new ExamDay(
+                    $value->getDate(),
+                    $value->getWeekDay()
+                );
+
+                $exUnits = [];
+
+                foreach ($value->getExams() as $exam) {
+                    foreach ($exam->getExamUnits() as $unit) {
+                        if(count($unit->getCourses()) > 0) {
+                            $exUnits[] = $unit;
+                        }
+                    }
+                    $ex = new Exam($exUnits);
+
+                    $ex->setTimeSlot($exam->getTimeSlot());
+                    $ex->addStudents($exam->getStudents());
+
+                    $newExamDay->addExams($ex);
+
+                    $exUnits = [];
+                }
+
+                return $newExamDay;
+            });
+
     }
 }
