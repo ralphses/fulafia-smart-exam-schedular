@@ -8,7 +8,7 @@
     @component('components.dashboard.page-header')
     @endcomponent
 
-    @component('components.dashboard.timetable-generate', ['info' => $info])
+    @component('components.dashboard.timetable.timetable-generate', ['info' => $info])
     @endcomponent
 
     @component('components.dashboard.footer')

@@ -69,7 +69,7 @@ class TimeTableController extends Controller
      * @return Response
      * @throws Exception
      */
-    public function store(Request $request)
+    public function store(Request $request): Response
     {
 //        $request->dd();
 
@@ -153,8 +153,13 @@ class TimeTableController extends Controller
 
         $processedExamDays = $buildResult['examDays'];
 
-        $processedExamDays = $this->sanitizeExamDays($processedExamDays);
-        dd($processedExamDays);
+        $sanitizedExamDays = $this->sanitizeExamDays($processedExamDays);
+
+        $timeTable->setExamDays($sanitizedExamDays->all());
+
+//        dd($timeTable);
+
+        return response()->view('timetable-preview', ['timetable' => $timeTable]);
 
     }
 
@@ -204,7 +209,7 @@ class TimeTableController extends Controller
 
                     if(is_null($venue)) break;
 
-                    $xmUnit->setVenue($venue->getName());
+                    $xmUnit->setVenue(ExamCenters::find($venue->getId()));
 
                     $currentCourseId = 0;
 
@@ -236,7 +241,7 @@ class TimeTableController extends Controller
 
                                     $newExamUnit = new ExamUnit();
 
-                                    $newExamUnit->setVenue($venue->getName());
+                                    $newExamUnit->setVenue(ExamCenters::find($venue->getId()));
                                     $newExamUnit->addCourses($course->getId());
 
                                     $examUnits[] = $newExamUnit;
@@ -251,7 +256,7 @@ class TimeTableController extends Controller
 
                                 $newExamUnit = new ExamUnit();
 
-                                $newExamUnit->setVenue($venue->getName());
+                                $newExamUnit->setVenue(ExamCenters::find($venue->getId()));
                                 $newExamUnit->addCourses($course->getId());
 
                                 $examUnits[] = $newExamUnit;
@@ -276,7 +281,7 @@ class TimeTableController extends Controller
                         $venue->setFreeSpace($venue->getFreeSpace() - count($course->getStudents()));
                         $course->setAssigned(true);
 
-                        echo count($course->getStudents()). ' '. $venue->getName() . ' ' . $venue->getFreeSpace() . ' >>> '.$timeSlot . '----'. $examDay->getWeekDay(). '<br>';
+//                        echo count($course->getStudents()). ' '. $venue->getName() . ' ' . $venue->getFreeSpace() . ' >>> '.$timeSlot . '----'. $examDay->getWeekDay(). '<br>';
                     }
 
                     while($venue AND $venue->getFreeSpace() > 0);
@@ -330,7 +335,7 @@ class TimeTableController extends Controller
             $courses = $this->getDepartmentCourses($request->get('dept_course'));
         }
 
-        return $courses->all();
+        return $courses->shuffle()->all();
     }
 
     /**
@@ -515,7 +520,7 @@ class TimeTableController extends Controller
             ->first();
     }
 
-    private function sanitizeExamDays(array $processedExamDays)
+    private function sanitizeExamDays(array $processedExamDays): Collections
     {
         return
             collect($processedExamDays)->filter(function ($day) {

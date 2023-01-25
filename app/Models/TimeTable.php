@@ -87,6 +87,14 @@ class TimeTable extends Model
         $this->examDays[] = $examDay;
     }
 
+    /**
+     * @param array $examDays
+     */
+    public function setExamDays(array $examDays): void
+    {
+        $this->examDays = $examDays;
+    }
+
 
 
 }

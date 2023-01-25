@@ -2,9 +2,11 @@
 
 namespace App\Models\Models;
 
+use App\Models\ExamCenters;
+
 class ExamUnit
 {
-    private string $venue;
+    private ExamCenters $venue;
     private array $courses;
 
     /**
@@ -16,9 +18,9 @@ class ExamUnit
     }
 
     /**
-     * @param string $venue
+     * @param ExamCenters $venue
      */
-    public function setVenue(string $venue): void
+    public function setVenue(ExamCenters $venue): void
     {
         $this->venue = $venue;
     }
@@ -36,7 +38,7 @@ class ExamUnit
      */
     public function addCourses(int $courseId): void
     {
-        $this->courses[] = $courseId;
+        $this->courses[] = \App\Models\Course::find($courseId);
     }
 
 

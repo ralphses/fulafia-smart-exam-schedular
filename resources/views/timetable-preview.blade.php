@@ -8,7 +8,7 @@
     @component('components.dashboard.page-header')
     @endcomponent
 
-    @component('components.dashboard.department.department-all', ['departments' => $departments])
+    @component('components.dashboard.timetable.timetable-preview', ['timetable' => $timetable])
     @endcomponent
 
     @component('components.dashboard.footer')

@@ -8,7 +8,7 @@
     @component('components.dashboard.page-header')
     @endcomponent
 
-    @component('components.dashboard.faculty-all', ['faculties' => $faculties])
+    @component('components.dashboard.faculty.faculty-all', ['faculties' => $faculties])
     @endcomponent
 
     @component('components.dashboard.footer')
