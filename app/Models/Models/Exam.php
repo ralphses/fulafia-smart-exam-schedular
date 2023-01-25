@@ -10,7 +10,6 @@ class Exam
 
 
     /**
-     * @param array $students
      * @param array $examUnits
      */
     public function __construct(array $examUnits)

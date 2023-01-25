@@ -37,12 +37,13 @@
                     <table class="table table-bordered table-striped table-vcenter">
                         <thead>
                         <tr>
-                            <th style="width: 19%;">Date<br>(Days)</th>
+                            <th style="width: 19%;">Date/Days</th>
                             @foreach($timetable->getTimeSlots() as $timeSlot)
                                 <th style="width: 27%;">{{ $timeSlot }}</th>
                             @endforeach
                         </tr>
                         </thead>
+
                         <tbody>
 
                         @foreach($timetable->getExamDays() as $examDay)
@@ -51,24 +52,20 @@
                                     {{ $examDay->getDate() }}
                                     {{  "(".$examDay->getWeekDay().")" }}
                                 </td>
-                                <td class="fw-semibold fs-sm">
 
-                                    @foreach($examDay->getExams() as $exam)
-                                        @if($exam->getTimeSlot())
+                                @foreach($examDay->getExams() as $examD)
+                                    <td class="fw-semibold fs-sm">
+                                        @foreach($examD->getExamUnits() as $unit)
 
-                                        @endif
-                                    @endforeach
+                                            {{$unit->getVenue()->code}}
 
-                                </td>
-
-                                <td class="fw-semibold fs-sm">
-
-                                </td>
-
-                                <td class="fw-semibold fs-sm">
-
-                                </td>
-
+                                            @foreach($unit->getCourses() as $course)
+                                                {{ $course->code .' '}}
+                                            @endforeach
+                                            <br>
+                                        @endforeach
+                                    </td>
+                                @endforeach
                             </tr>
                         @endforeach
 

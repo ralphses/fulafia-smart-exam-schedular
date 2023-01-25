@@ -10,9 +10,9 @@ class ExamUnit
     private array $courses;
 
     /**
-     * @return string
+     * @return ExamCenters
      */
-    public function getVenue(): string
+    public function getVenue(): ExamCenters
     {
         return $this->venue;
     }
