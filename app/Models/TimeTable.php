@@ -14,6 +14,9 @@ class TimeTable extends Model
     protected array $timeSlots;
     protected array $students;
     protected array $examDays;
+    protected array $scheduledStudentAndCourses;
+    protected array $unAssignedCourses;
+    protected array $scheduler;
 
     protected $fillable = [
         'exam_days',
@@ -95,6 +98,52 @@ class TimeTable extends Model
         $this->examDays = $examDays;
     }
 
+    /**
+     * @return array
+     */
+    public function getScheduledStudentAndCourses(): array
+    {
+        return $this->scheduledStudentAndCourses;
+    }
 
+    /**
+     * @param array $scheduledStudentAndCourses
+     */
+    public function setScheduledStudentAndCourses(array $scheduledStudentAndCourses): void
+    {
+        $this->scheduledStudentAndCourses = $scheduledStudentAndCourses;
+    }
+
+    /**
+     * @return array
+     */
+    public function getUnAssignedCourses(): array
+    {
+        return $this->unAssignedCourses;
+    }
+
+    /**
+     * @param array $unAssignedCourses
+     */
+    public function setUnAssignedCourses(array $unAssignedCourses): void
+    {
+        $this->unAssignedCourses = $unAssignedCourses;
+    }
+
+    /**
+     * @return array
+     */
+    public function getScheduler(): array
+    {
+        return $this->scheduler;
+    }
+
+    /**
+     * @param array $scheduler
+     */
+    public function setScheduler(array $scheduler): void
+    {
+        $this->scheduler = $scheduler;
+    }
 
 }

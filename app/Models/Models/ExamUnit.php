@@ -8,6 +8,7 @@ class ExamUnit
 {
     private ExamCenters $venue;
     private array $courses;
+    private array $venueCourseStudent;
 
     /**
      * @return ExamCenters
@@ -41,7 +42,21 @@ class ExamUnit
         $this->courses[] = \App\Models\Course::find($courseId);
     }
 
+    /**
+     * @return array
+     */
+    public function getVenueCourseStudent(): array
+    {
+        return $this->venueCourseStudent;
+    }
 
+    /**
+     * @param VenueCourseStudent $venueCourseStudent
+     */
+    public function addCourseStudent(VenueCourseStudent $venueCourseStudent): void
+    {
+        $this->venueCourseStudent[] = $venueCourseStudent;
+    }
 
 
 

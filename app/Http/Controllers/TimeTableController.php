@@ -9,6 +9,8 @@ use App\Models\Models\Center;
 use App\Models\Models\Exam;
 use App\Models\Models\ExamDay;
 use App\Models\Models\ExamUnit;
+use App\Models\Models\Schedule;
+use App\Models\Models\VenueCourseStudent;
 use App\Models\TimeSlot;
 use App\Models\TImeTable;
 use App\Utilities\Utility;
@@ -109,7 +111,7 @@ class TimeTableController extends Controller
         $semester = strtoupper($request->get('semester')) . ' SEMESTER';
 
         //Get Session
-        $session = $request->get('session') . ' SESSION';
+        $session = $request->get('session');
 
         //Get exam start and stop date
         $start = date('l, Y-M-d', strtotime($request->get('date_start')));
@@ -133,7 +135,7 @@ class TimeTableController extends Controller
         //Create a new Timetable
         $timeTable = new TImeTable(
             [
-                'instructions' => implode('|', $instructions),
+                'instructions' => $instructions,
                 'exam_days' => implode('|', $allowedDays),
                 'planner' => $planner,
                 'stop_date' => $stop,
@@ -153,11 +155,16 @@ class TimeTableController extends Controller
 
         $processedExamDays = $buildResult['examDays'];
 
-        $sanitizedExamDays = $this->sanitizeExamDays($processedExamDays);
+        $timeTable->setExamDays($this->sanitizeExamDays($processedExamDays)->all());
 
-        $timeTable->setExamDays($sanitizedExamDays->all());
+        $timeTable->setScheduledStudentAndCourses($buildResult['scheduledStudentAndCourses']);
 
-//        dd($timeTable);
+        $timeTable->setUnAssignedCourses($buildResult['unAssignedCourses']);
+
+        $timeTable->setScheduler($this->buildScheduler($timeTable));
+
+        dd($timeTable->getScheduler());
+//        dd($timeTable->getScheduledStudentAndCourses()[0]['timeSLot']);
 
         return response()->view('timetable-preview', ['timetable' => $timeTable]);
 
@@ -167,6 +174,7 @@ class TimeTableController extends Controller
     private function buildExamDays(array $courses, array $centers, TImeTable $timeTable, array $examDays, int $noOfExamUnits): array
     {
         $allExamDays = [];
+        $scheduledStudentAndCourses = [];
 
         $courses = collect($courses)->map(function ($course) {
             $students = $course->students->map(function ($std) {
@@ -227,18 +235,24 @@ class TimeTableController extends Controller
                             //Get another venue with required size
                             $venue = $this->getCenter($allCenters, count($course->getStudents()));
 
-                            //Spread students across available venues if venue with required size not available
+                            //Spread students across all available venues if venue with required size not available
                             if(is_null($venue)) {
 
-                                $requiredSpace = count($course->getStudents());
+                                $requiredStudents = collect($course->getStudents());
+                                $requiredSpace = $requiredStudents->count();
 
                                 while ($requiredSpace > 0) {
+
                                     $venue = $this->getNextAvailableCenter($allCenters, $requiredSpace);
 
                                     if(!$venue) {
                                         break;
                                     }
 
+                                    //Get Students to be filled for this particular exam venue
+                                    $students = $this->getStudentsRequired($requiredStudents, $venue->getFreeSpace());
+
+                                    //Create new exam unit
                                     $newExamUnit = new ExamUnit();
 
                                     $newExamUnit->setVenue(ExamCenters::find($venue->getId()));
@@ -247,6 +261,9 @@ class TimeTableController extends Controller
                                     $examUnits[] = $newExamUnit;
 
                                     $requiredSpace = $requiredSpace - $venue->getFreeSpace();
+
+                                    //Add Students to scheduler
+                                    $scheduledStudentAndCourses = $this->addStudentsToScheduler($scheduledStudentAndCourses, $course->getId(), $venue->getId(), $venue->getFreeSpace(), $timeSlot, $students, $examDay->getDate());
 
                                     $venue->setFilled(true);
                                 }
@@ -261,9 +278,13 @@ class TimeTableController extends Controller
 
                                 $examUnits[] = $newExamUnit;
 
+                                //Add Students to scheduler
+                                $scheduledStudentAndCourses = $this->addStudentsToScheduler($scheduledStudentAndCourses, $course->getId(), $venue->getId(), count($course->getStudents()), $timeSlot, $course->getStudents(), $examDay->getDate());
+
                                 $venue->setFilled(true);
 
                                 $checkDailyStudents++;
+
                                 if($checkDailyStudents % 2 == 0) {
                                     $dailyStudents = array_merge($dailyStudents, $course->getStudents());
                                 }
@@ -271,6 +292,7 @@ class TimeTableController extends Controller
 
                         } else {
                             $xmUnit->addCourses($course->getId());
+                            $scheduledStudentAndCourses = $this->addStudentsToScheduler($scheduledStudentAndCourses, $course->getId(), $venue->getId(), count($course->getStudents()), $timeSlot, $course->getStudents(), $examDay->getDate());
                         }
 
                         Utility::$currentStudents = array_merge(Utility::$currentStudents, $course->getStudents());
@@ -281,10 +303,7 @@ class TimeTableController extends Controller
                         $venue->setFreeSpace($venue->getFreeSpace() - count($course->getStudents()));
                         $course->setAssigned(true);
 
-//                        echo count($course->getStudents()). ' '. $venue->getName() . ' ' . $venue->getFreeSpace() . ' >>> '.$timeSlot . '----'. $examDay->getWeekDay(). '<br>';
-                    }
-
-                    while($venue AND $venue->getFreeSpace() > 0);
+                    }while($venue AND $venue->getFreeSpace() > 0);
                     //End of add courses for a unit
 
                     $examUnits[] = $xmUnit;
@@ -307,14 +326,16 @@ class TimeTableController extends Controller
             $allExamDays[] = $examDay;
         }
 
+        $notAssignedCourses = collect($courses)
+            ->filter(function ($c) {
+                return !$c->isAssigned();
+            })->all();
         return
             [
                 'examDays' => $allExamDays,
-                'unAssignedCourses' => collect($courses)
-                    ->filter(function ($c) { return !$c->isAssigned();})
-                    ->all()
+                'scheduledStudentAndCourses' => $scheduledStudentAndCourses,
+                'unAssignedCourses' => $notAssignedCourses,
             ];
-
     }
 
 
@@ -366,7 +387,6 @@ class TimeTableController extends Controller
     private function getDateDay(string $date): array
     {
         return explode(' ', $date);
-
     }
 
     private function filterAllowedDates(array $examDates, array $allowedDays): array
@@ -558,5 +578,126 @@ class TimeTableController extends Controller
                 return $newExamDay;
             });
 
+    }
+
+    private function buildScheduler(TImeTable $timeTable): array
+    {
+        $finalScheduler = [];
+
+        $schedule = $timeTable->getScheduledStudentAndCourses();
+
+        $groupedStudentsByDay = $this->sortStudentsByExamDay($schedule);
+        $groupedStudentsByVenue = $this->sortSudentsByVenue($groupedStudentsByDay);
+
+
+        foreach ($groupedStudentsByVenue as $date => $value) {
+            foreach ($value as $venue => $schdedules) {
+                foreach ($schdedules as $schdedule) {
+                    $finalScheduler[$date][$venue][$schdedule->getTimeSlot()][] = $schdedule->getStudents()->all();
+                }
+            }
+        }
+
+        foreach ($groupedStudentsByVenue as $date => $value) {
+            foreach ($value as $venue => $schdedules) {
+                foreach ($schdedules as $schdedule) {
+                    $finalScheduler[$date][$venue][$schdedule->getTimeSlot()] = $this->array_flatten($finalScheduler[$date][$venue][$schdedule->getTimeSlot()]);
+                }
+            }
+        }
+
+        return $finalScheduler;
+
+    }
+
+    /**
+     * @param array $scheduledStudentAndCourses
+     * @param int $courseId
+     * @param int $venueId
+     * @param int $venueFreeSpace
+     * @param string $timeSLot
+     * @param array $students
+     * @param string $examDate
+     * @return array
+     */
+
+    private function addStudentsToScheduler(array $scheduledStudentAndCourses, int $courseId, int $venueId, int $venueFreeSpace, string $timeSLot, array $students = [], string $examDate): array
+    {
+        $scheduledStudentAndCourses[] = new Schedule(Course::find($courseId)->code, ExamCenters::find($venueId)->code, $timeSLot, $examDate, $venueFreeSpace, $students);
+        return $scheduledStudentAndCourses;
+    }
+
+    /**
+     * @param Collections $allStudents
+     * @param int $freeSpace
+     * @return array
+     */
+    private function getStudentsRequired(Collections $allStudents, int $freeSpace): array
+    {
+        $students = [];
+
+        for ($i = 0; $i < $freeSpace; $i++) {
+            $students[] = $allStudents->pop();
+        }
+
+        return $students;
+    }
+
+    private function sortSudentsByVenue(array $schedule): array
+    {
+        $groupedStudentsByVenue = [];
+
+        foreach ($schedule as $key => $value) {
+
+            $groupedStudentsByVenue[$key] = collect($value)
+                ->groupBy(function ($item, $ke) use ($value) {
+                    return $value[$ke]->getVenue();
+                })->all();
+        }
+        return $groupedStudentsByVenue;
+    }
+
+    /**
+     * @param array $schedule
+     * @return array
+     */
+    private function sortStudentsByExamDay(array $schedule): array
+    {
+        return collect($schedule)
+            ->groupBy(function ($item, $key) use ($schedule) {
+                return $schedule[$key]->getExamDate();
+            })->all();
+    }
+
+    private function getTimeSchedule(array $getTimeSlots): array
+    {
+        $times = [];
+
+        foreach ($getTimeSlots as $timeSlot) {
+            $times[$timeSlot] = [];
+        }
+
+        return $times;
+    }
+
+
+
+    /**
+     * Convert a multi-dimensional array into a single-dimensional array.
+     * @author Sean Cannon, LitmusBox.com | seanc@litmusbox.com
+     * @param  array $array The multi-dimensional array.
+     * @return array
+     */
+    function array_flatten(array $array) {
+
+        $result = array();
+        foreach ($array as $key => $value) {
+            if (is_array($value)) {
+                $result = array_merge($result, $this->array_flatten($value));
+            } else {
+                $result = array_merge($result, array($key => $value));
+            }
+        }
+        return $result;
     }
 }
