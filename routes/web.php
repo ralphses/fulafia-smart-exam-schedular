@@ -152,6 +152,9 @@ Route::prefix('timetable')->middleware(['auth', 'verified'])->group(function () 
 
     Route::post('/generate', [TimeTableController::class, 'store'])
         ->name('timetable.generate');
+
+    Route::post('/finish', [TimeTableController::class, 'finish'])
+        ->name('timetable.finish');
 });
 
 Route::prefix('timeslot')->middleware(['auth', 'verified'])->group(function () {

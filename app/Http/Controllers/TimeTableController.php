@@ -5,25 +5,33 @@ namespace App\Http\Controllers;
 use App\Models\Course;
 use App\Models\Department;
 use App\Models\ExamCenters;
+use App\Models\ExamDay as ExamDayDB;
+use App\Models\Exams;
+use App\Models\ExamUnit as ExamUnitDB;
+use App\Models\ExamUnitSchedule;
 use App\Models\Models\Center;
+use App\Models\Models\Course as CourseDB;
 use App\Models\Models\Exam;
 use App\Models\Models\ExamDay;
 use App\Models\Models\ExamUnit;
 use App\Models\Models\Schedule;
-use App\Models\Models\VenueCourseStudent;
+use App\Models\SittingSchedular;
+use App\Models\Student;
+use App\Models\TimeSittingSchedular;
 use App\Models\TimeSlot;
 use App\Models\TImeTable;
+use App\Models\VenueSittingSchedular;
 use App\Utilities\Utility;
 use DateTime;
 use Exception;
-use Illuminate\Contracts\Foundation\Application;
-use Illuminate\Contracts\View\Factory;
-use Illuminate\Contracts\View\View;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
+use Illuminate\Routing\Redirector;
 use Illuminate\Support\Collection as Collections;
 use Illuminate\Support\Facades\Auth;
 use JetBrains\PhpStorm\ArrayShape;
+use Psr\Container\ContainerExceptionInterface;
+use Psr\Container\NotFoundExceptionInterface;
 
 class TimeTableController extends Controller
 {
@@ -40,9 +48,8 @@ class TimeTableController extends Controller
     /**
      * Show the form for creating a new resource.
      *
-     * @return Application|Factory|View
      */
-    public function create(): View|Factory|Application
+    public function create()
     {
         $school = Auth::user()->school;
 
@@ -52,6 +59,12 @@ class TimeTableController extends Controller
         $courses = Course::whereIn('department_id', $depts->map(function ($dep) { return $dep->id;}))->get();
 
         $timeslots = $school->timeSlots;
+
+        $response = $this->checkAvailability($centers, $faculties, $depts, $courses, $timeslots);
+
+        if($response) {
+            return redirect()->back()->with('dashboard', $response);
+        }
 
         $info = [
             'center' => $centers,
@@ -68,12 +81,11 @@ class TimeTableController extends Controller
      * Store a newly created resource in storage.
      *
      * @param Request $request
-     * @return Response
+     * @return Response|Redirector
      * @throws Exception
      */
-    public function store(Request $request): Response
+    public function store(Request $request): Response|Redirector
     {
-//        $request->dd();
 
         //Get all Exam days
         $examDates = $this->getExamDates($request->get('date_start'), $request->get('date_stop'));
@@ -97,12 +109,6 @@ class TimeTableController extends Controller
 
         //Sort exam centers according to capcity
         $centers = $this->sortCentersByCapacity($centers);
-
-        //Todo: Check if general first,
-        //      Sort by general first
-        //      Else
-        //      Proceed
-        //Todo: Generate Exam days
 
         //Get School Name
         $schoolName = Auth::user()->school->name;
@@ -135,17 +141,18 @@ class TimeTableController extends Controller
         //Create a new Timetable
         $timeTable = new TImeTable(
             [
-                'instructions' => $instructions,
+                'instructions' => implode('|', $instructions),
                 'exam_days' => implode('|', $allowedDays),
                 'planner' => $planner,
-                'stop_date' => $stop,
-                'start_date' => $start,
+                'stop_date' => new DateTime($stop),
+                'start_date' => new DateTime($start),
                 'session' => $session,
                 'semester' => $semester,
                 'school_name' => $schoolName,
                 'school_id' => Auth::user()->school->id
             ]
         );
+
 
         //Set timetable timeslots
         $timeTable->setTimeSlots($timeSlots);
@@ -163,11 +170,96 @@ class TimeTableController extends Controller
 
         $timeTable->setScheduler($this->buildScheduler($timeTable));
 
-        dd($timeTable->getScheduler());
-//        dd($timeTable->getScheduledStudentAndCourses()[0]['timeSLot']);
+        session()->put('previewTimeTable', $timeTable);
 
         return response()->view('timetable-preview', ['timetable' => $timeTable]);
+    }
 
+    public function finish (Request $request) {
+        try {
+
+            $currentTimeTable = session()->get('previewTimeTable');
+
+            $currentTimeTable->save($currentTimeTable->getAttributes());
+
+            //Todo: Create Exam days
+
+            foreach ($currentTimeTable->getExamDays() as $examDay) {
+
+                //Save ExamDays
+                $currentExamDay = ExamDayDB::create([
+                    'date' => new DateTime($examDay->getDate()),
+                    'week_day' => $examDay->getWeekDay(),
+                    'time_table_id' => $currentTimeTable->id
+                ]);
+
+                //Save Exams for this exam day
+                foreach ($examDay->getExams() as $exam) {
+
+                    if(count($exam->getStudents()) > 0) {
+
+                        $currentExam = Exams::create([
+                            'time_slot_id' => TimeSlot::where('name', $exam->getTimeSlot())->first()->id,
+                            'exam_day_id' => $currentExamDay->id,
+                            'students' => implode('|', $exam->getStudents())
+                        ]);
+
+                        foreach ($exam->getExamUnits() as $examUnit) {
+
+                            $currentExamUnit = ExamUnitDB::create([
+                                'exam_center_id' => $examUnit->getVenue()->id,
+                                'exams_id' => $currentExam->id,
+                            ]);
+
+                            foreach ($examUnit->getCourses() as $course) {
+                                $courses = Course::where('id', $course->id)->get(['id'])->map(function ($value) {return $value->id;})->all();
+
+                                ExamUnitSchedule::create([
+                                    'exam_units_id' => $currentExamUnit->id,
+                                    'course_id' => $course->id,
+                                    'students' => implode('|', $courses)
+                                ]);
+                            }
+                        }
+                    }
+                }
+            }
+
+            //Todo: Save Sitting Scheduler
+
+            foreach ($currentTimeTable->getScheduler() as $date => $schedules) {
+
+                $currentSchedule = SittingSchedular::create([
+                    'date' => $date,
+                    'time_tables_id' => $currentTimeTable->id
+                ]);
+
+                foreach ($schedules as $venue => $timeSchedule) {
+
+                    $currentVenueSchedule = VenueSittingSchedular::create([
+                        'sitting_schedular_id' => $currentSchedule->id,
+                        'venue_code' => $venue
+                    ]);
+
+                    foreach ($timeSchedule as $timeSlot => $students) {
+
+                        $students = array_filter($students, function ($val) { return !is_null($val); });
+
+                        $stds = implode('|', array_map(function ($v) { return $v->id; }, $students));
+
+                        TimeSittingSchedular::create([
+                            'venue_sitting_schedular_id' => $currentVenueSchedule->id,
+                            'time_slot' => $timeSlot,
+                            'students' => $stds
+                        ]);
+                    }
+                }
+
+            }
+
+        } catch (NotFoundExceptionInterface|ContainerExceptionInterface $e) {
+            return redirect()->back();
+        }
     }
 
     #[ArrayShape(['examDays' => "array", 'unAssignedCourses' => "mixed"])]
@@ -180,7 +272,7 @@ class TimeTableController extends Controller
             $students = $course->students->map(function ($std) {
                 return $std->id;
             });
-            return new \App\Models\Models\Course($course->id, $students->all(), $course->title, false, $course->general);
+            return new CourseDB($course->id, $students->all(), $course->title, false, $course->general);
         }
         )->filter(function ($value) { return count($value->getStudents()) > 0;});
 
@@ -330,6 +422,7 @@ class TimeTableController extends Controller
             ->filter(function ($c) {
                 return !$c->isAssigned();
             })->all();
+
         return
             [
                 'examDays' => $allExamDays,
@@ -623,7 +716,13 @@ class TimeTableController extends Controller
 
     private function addStudentsToScheduler(array $scheduledStudentAndCourses, int $courseId, int $venueId, int $venueFreeSpace, string $timeSLot, array $students = [], string $examDate): array
     {
+        $students = collect($students)->map(function ($v) {
+            return Student::find($v);
+        })->all();
+
+
         $scheduledStudentAndCourses[] = new Schedule(Course::find($courseId)->code, ExamCenters::find($venueId)->code, $timeSLot, $examDate, $venueFreeSpace, $students);
+
         return $scheduledStudentAndCourses;
     }
 
@@ -688,7 +787,8 @@ class TimeTableController extends Controller
      * @param  array $array The multi-dimensional array.
      * @return array
      */
-    function array_flatten(array $array) {
+    function array_flatten(array $array): array
+    {
 
         $result = array();
         foreach ($array as $key => $value) {
@@ -699,5 +799,30 @@ class TimeTableController extends Controller
             }
         }
         return $result;
+    }
+
+    private function checkAvailability($centers, $faculties, $depts, $courses, $timeslots): bool|string
+    {
+        if($centers->count() < 1) {
+            return "No Examination Center added, add one";
+        }
+
+        else if($faculties->count() < 1) {
+            return "No Faculty added, add one";
+        }
+
+        else if($depts->count() < 1) {
+            return "No Department added, add one";
+        }
+
+        else if($courses->count() < 1) {
+            return "No Course added, add one";
+        }
+
+        else if($timeslots->count() < 1) {
+            return "No Timeslot added, add one";
+        }
+
+        return false;
     }
 }

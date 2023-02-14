@@ -13,15 +13,15 @@ return new class extends Migration
      */
     public function up()
     {
-        Schema::create('exam_day', function (Blueprint $table) {
+        Schema::create('time_sitting_schedulars', function (Blueprint $table) {
             $table->id();
 
-            $table->date('date');
-            $table->string('week_day');
+            $table->string('time_slot');
+            $table->text('students');
 
-            $table->unsignedBigInteger('time_table_id');
+            $table->unsignedBigInteger('venue_sitting_schedular_id');
 
-            $table->foreign('time_table_id')->references('id')->on('time_tables')->cascadeOnDelete()->cascadeOnUpdate();
+            $table->foreign('venue_sitting_schedular_id')->references('id')->on('venue_sitting_schedulars')->cascadeOnDelete()->cascadeOnUpdate();
 
             $table->timestamps();
         });
@@ -34,6 +34,6 @@ return new class extends Migration
      */
     public function down()
     {
-        Schema::dropIfExists('exam_day');
+        Schema::dropIfExists('time_sitting_schedulars');
     }
 };

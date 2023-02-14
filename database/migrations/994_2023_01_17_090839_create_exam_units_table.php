@@ -17,11 +17,9 @@ return new class extends Migration
 
             $table->id();
 
-            $table->unsignedBigInteger('course_id');
             $table->unsignedBigInteger('exam_center_id');
             $table->unsignedBigInteger('exams_id');
 
-            $table->foreign('course_id')->references('id')->on('courses')->cascadeOnDelete()->cascadeOnUpdate();
             $table->foreign('exam_center_id')->references('id')->on('exam_centers')->cascadeOnDelete()->cascadeOnUpdate();
             $table->foreign('exams_id')->references('id')->on('exams')->cascadeOnDelete()->cascadeOnUpdate();
 

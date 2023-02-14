@@ -10,7 +10,18 @@
                 <h2 class="h6 fw-medium fw-medium text-muted mb-0">
                     Welcome <a class="fw-semibold" href="{{ route('school.profile') }}">{{ \Illuminate\Support\Facades\Auth::user()->name }}</a>, everything looks great.
                 </h2>
+                @if(session('dashboard'))
+                    <nav class="flex-shrink-0 mt-3 mt-sm-0 ms-sm-3" aria-label="breadcrumb">
+                        <div class="alert alert-secondary alert-dismissible alert-danger" role="alert">
+                            <p class="mb-0">
+                                {{ session()->get('dashboard') }} <a class="alert-link" href="{{ route('dashboard') }}">OK</a>!
+                            </p>
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                    </nav>
+                @endif
             </div>
+
             <div class="flex-shrink-0 mt-3 mt-sm-0 ms-sm-3">
                   <span class="d-inline-block">
                     <a class="btn btn-primary px-4 py-2 js-click-ripple-enabled" data-toggle="click-ripple" href="{{ route('timetable.generate') }}" style="overflow: hidden; position: relative; z-index: 1;">

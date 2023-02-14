@@ -17,6 +17,8 @@ class ExamDay extends Model
         'time_table_id',
     ];
 
+    protected $table = 'exam_day';
+
     public function timeTable(): BelongsTo
     {
         return $this->belongsTo(TimeTable::class);

@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class ExamUnit extends Model
@@ -12,7 +13,6 @@ class ExamUnit extends Model
     use HasFactory;
 
     protected $fillable = [
-        'course_id',
         'exam_center_id',
         'exams_id',
     ];
@@ -30,5 +30,10 @@ class ExamUnit extends Model
     public function examCenter(): HasOne
     {
         return $this->hasOne(ExamCenters::class);
+    }
+
+    public function examUnitSchedule(): HasMany
+    {
+        return $this->hasMany(ExamUnitSchedule::class);
     }
 }

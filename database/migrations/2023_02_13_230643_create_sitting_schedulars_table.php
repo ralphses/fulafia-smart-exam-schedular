@@ -11,17 +11,16 @@ return new class extends Migration
      *
      * @return void
      */
-    public function up()
+    public function up(): void
     {
-        Schema::create('exam_day', function (Blueprint $table) {
+        Schema::create('sitting_schedulars', function (Blueprint $table) {
             $table->id();
 
-            $table->date('date');
-            $table->string('week_day');
+            $table->string('date');
 
-            $table->unsignedBigInteger('time_table_id');
+            $table->unsignedBigInteger('time_tables_id');
 
-            $table->foreign('time_table_id')->references('id')->on('time_tables')->cascadeOnDelete()->cascadeOnUpdate();
+            $table->foreign('time_tables_id')->references('id')->on('time_tables')->cascadeOnDelete()->cascadeOnUpdate();
 
             $table->timestamps();
         });
@@ -34,6 +33,6 @@ return new class extends Migration
      */
     public function down()
     {
-        Schema::dropIfExists('exam_day');
+        Schema::dropIfExists('sitting_schedulars');
     }
 };

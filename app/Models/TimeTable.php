@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class TimeTable extends Model
 {
@@ -39,6 +40,11 @@ class TimeTable extends Model
     public function examDay(): HasMany
     {
         return $this->hasMany(ExamDay::class);
+    }
+
+    public function sittingScheduler(): HasOne
+    {
+        return $this->hasOne(SittingSchedular::class, 'time_tables_id', );
     }
 
     /**

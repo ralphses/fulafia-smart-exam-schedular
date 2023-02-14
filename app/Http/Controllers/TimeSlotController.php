@@ -34,7 +34,7 @@ class TimeSlotController extends Controller
     /**
      * Store a newly created resource in storage.
      *
-     * @param \Illuminate\Http\Request $request
+     * @param Request $request
      * @throws \Exception
      */
     public function store(Request $request)
@@ -82,7 +82,7 @@ class TimeSlotController extends Controller
     /**
      * Display the specified resource.
      *
-     * @param  \App\Models\TimeSlot  $timeSlot
+     * @param TimeSlot $timeSlot
      * @return Response
      */
     public function show(TimeSlot $timeSlot)
@@ -93,7 +93,7 @@ class TimeSlotController extends Controller
     /**
      * Show the form for editing the specified resource.
      *
-     * @param  \App\Models\TimeSlot  $timeSlot
+     * @param TimeSlot $timeSlot
      * @return Response
      */
     public function edit(TimeSlot $timeSlot)
@@ -104,8 +104,8 @@ class TimeSlotController extends Controller
     /**
      * Update the specified resource in storage.
      *
-     * @param  \Illuminate\Http\Request  $request
-     * @param  \App\Models\TimeSlot  $timeSlot
+     * @param Request $request
+     * @param TimeSlot $timeSlot
      * @return Response
      */
     public function update(Request $request, TimeSlot $timeSlot)
@@ -116,7 +116,7 @@ class TimeSlotController extends Controller
     /**
      * Remove the specified resource from storage.
      *
-     * @param  \App\Models\TimeSlot  $timeSlot
+     * @param TimeSlot $timeSlot
      * @return Response
      */
     public function destroy(int $id)

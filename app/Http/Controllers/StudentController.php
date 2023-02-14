@@ -38,8 +38,10 @@ class StudentController extends Controller
     {
         session()->put('new-student-reg', 'd');
 
+        $schools = School::all(['id','name']);
+
         return response()->view('student-register', [
-            'schools' => School::all(['id','name']),
+            'schools' => $schools,
         ]);
     }
 
@@ -97,7 +99,7 @@ class StudentController extends Controller
 
             session()->forget(['new_std1', 'new_std2', 'select-courses']);
 
-            dd(Course::find(2)->students);
+            return  redirect('/')->with('register', 'Registration Complete');
         }
    }
 
@@ -123,6 +125,7 @@ class StudentController extends Controller
         $school = School::findOrFail($schoolId);
         $faculties = $school->faculties;
         $departments = Department::whereIn('faculty_id', $faculties->map(function ($value) { return $value->id; }) )->get();
+
 
         session()->put('new-student', 'true');
 

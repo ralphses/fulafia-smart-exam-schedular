@@ -61,6 +61,7 @@
                                         [
                                             @foreach($unit->getCourses() as $course)
                                                 <p class="fw-semibold d-flex d-inline-flex m-0">
+
                                                     {{ $course->code }}
 
                                                     @foreach($timetable->getScheduledStudentAndCourses() as $schedule)
@@ -88,21 +89,80 @@
             </div>
         </div>
         <h6 class="text-black" style="margin: 0">INSTRUCTIONS</h6>
-        @foreach($timetable->instructions as $instruction)
+        @foreach(explode('|', $timetable->instructions) as $instruction)
             <p class="text-sm-start" style="margin: auto; font-size: smaller">{{++$loop->index. '. '. $instruction}}</p>
             <!-- END Full Table -->
         @endforeach
 
         <br>
+        <br>
+
+
+        <div class="card card-borderless push justify-content-center text-center">
+            <div class="card-header">
+                <h3 class="block-title">
+                    STUDENTS SITTING SCHEDULER
+                </h3>
+            </div>
+
+            @foreach($timetable->getScheduler() as $key => $schedule)
+
+                <div class="card-header">
+                    <h3 class="block-title">
+                        <small>{{ $key }}</small>
+                    </h3>
+                </div>
+                @foreach($schedule as $venue => $timeSlots)
+                    <div class="card-header">
+                        <h3 class="block-title">
+                            <small>{{ $venue }}</small>
+                        </h3>
+                    </div>
+                    @foreach($timeSlots as $time => $students)
+                        <h3 class="block-title">
+                            <small>{{ $time }}</small>
+                        </h3>
+                        <div class="row d-flex justify-content-between p-4">
+                        @foreach($students as $student)
+
+                           @if($student)
+                                    <div class="col-md-6 col-xl-4 text-start">
+                                        <a class="block block-rounded block-link-shadow" href="javascript:void(0)">
+                                            <div class="block-content block-content-full d-flex flex-row-reverse align-items-center justify-content-between">
+                                                <img class="img-avatar img-avatar48" src="{{ asset('media/avatars/avatar8.jpg') }}" alt="">
+                                                <div class="me-3">
+                                                    <p class="fw-semibold mb-0">{{ $student->name }}</p>
+                                                    <p class="fs-sm fw-medium text-muted mb-0">{{ $student->matric }}</p>
+                                                    <p class="fs-sm fw-bolder text-muted mb-0">Seat No. {{ ++$loop->index }}</p>
+                                                </div>
+                                            </div>
+                                        </a>
+                                    </div>
+                                @endif
+
+                        @endforeach
+                        </div>
+
+                    @endforeach
+                @endforeach
+            @endforeach
+        </div>
+
+
 
         <strong><h6 class="text-sm-end" style="margin: auto;">{{ $timetable->planner }}</h6></strong>
         <i><h6 class="text-sm-end" style="margin: auto;">Timetable Officer</h6></i>
 
         <div class="row items-push">
             <div class="col-lg-8 offset-lg-2 d-flex d-md-flex">
-                <button type="submit" class="btn btn-alt-primary btn-group-lg" style="width: 80%">Finish</button>
+                <form method="POST" action="{{ route('timetable.finish') }}">
+                    @csrf
+                    <button type="submit" class="btn btn-alt-primary btn-group-lg" style="width: 80%">Finish</button>
+                </form>
             </div>
         </div>
 
     </div>
+
+
 </main>

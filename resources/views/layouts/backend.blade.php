@@ -20,7 +20,7 @@
 
     <!-- Modules -->
     @yield('css')
-    @vite(['resources/sass/main.scss', 'resources/js/oneui/app.js'])
+    @vite(['resources/sass/main.scss'])
 
     <!-- Icons -->
     <!-- The following icons can be replaced with your own, they are used by desktop and mobile browsers -->
@@ -50,13 +50,15 @@
     @yield('content')
 
 </div>
-{{--<script src="/assets/"></script>--}}
 <script src="{{ asset("js/oneui.app.min.js") }}"></script>
 <script src="{{ asset("js/lib/jquery.min.js") }}"></script>
 <script src="{{ asset("js/plugins/select2/js/select2.full.min.js") }}"></script>
 <script src="{{ asset("js/plugins/jquery-validation/jquery.validate.min.js") }}"></script>
 <script src="{{ asset("js/plugins/jquery-validation/additional-methods.js") }}"></script>
+<script src="{{ asset("js/plugins/chart.js/chart.min.js") }}"></script>
+<script src="{{ asset("js/pages/be_pages_dashboard.min.js") }}"></script>
 <script>One.helpersOnLoad(['jq-select2']);</script>
+
 <script src="{{ asset("js/pages/be_forms_validation.min.js") }}"></script>
 
 

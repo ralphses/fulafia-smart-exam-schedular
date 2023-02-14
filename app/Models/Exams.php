@@ -14,6 +14,7 @@ class Exams extends Model
 
     protected $fillable = [
         'time_slot_id',
+        'students',
         'exam_day_id',
     ];
 
