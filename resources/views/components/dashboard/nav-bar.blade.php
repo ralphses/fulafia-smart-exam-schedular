@@ -123,6 +123,11 @@
                                 <span class="nav-main-link-name">New Timetable</span>
                             </a>
                         </li>
+                        <li class="nav-main-item">
+                            <a class="nav-main-link" href="{{ route('timetable.all') }}">
+                                <span class="nav-main-link-name">View All</span>
+                            </a>
+                        </li>
                     </ul>
                 </li>
 

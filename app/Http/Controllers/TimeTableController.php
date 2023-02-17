@@ -24,32 +24,65 @@ use App\Models\VenueSittingSchedular;
 use App\Utilities\Utility;
 use DateTime;
 use Exception;
+use Illuminate\Contracts\Foundation\Application;
+use Illuminate\Contracts\View\Factory;
+use Illuminate\Contracts\View\View;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Routing\Redirector;
 use Illuminate\Support\Collection as Collections;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Validation\Rule;
 use JetBrains\PhpStorm\ArrayShape;
 use Psr\Container\ContainerExceptionInterface;
 use Psr\Container\NotFoundExceptionInterface;
 
 class TimeTableController extends Controller
 {
+
+    public function showTable (Request $request): Response
+    {
+
+        $request->validate(['_school' => ['required', Rule::exists('time_tables', 'id')]]);
+
+        $timetable = TImeTable::find($request->get('_school'));
+
+        return response()->view('timetable-view-public', ['timetable' => $timetable]);
+    }
     /**
      * Display a listing of the resource.
      *
      * @return Response
      */
-    public function index()
+    public function index(): Response
     {
-        //
+        $timetables = Auth::user()->school->timetables;
+
+        return response()->view('timetable-all', ['timetables' => $timetables]);
+    }
+
+    /**
+     * @param int $id
+     * @return RedirectResponse
+     */
+    public function delete(int $id): RedirectResponse
+    {
+        TImeTable::destroy($id);
+
+        return response()->redirectTo(route('timetable.all'))->with('timetable', 'Delete Success');
+    }
+
+    public function show(int $id): Response
+    {
+        return response()->view('timetable-view', ['timetable' => TImeTable::find($id)]);
     }
 
     /**
      * Show the form for creating a new resource.
      *
      */
-    public function create()
+    public function create(): Factory|View|Application|RedirectResponse
     {
         $school = Auth::user()->school;
 
@@ -175,7 +208,8 @@ class TimeTableController extends Controller
         return response()->view('timetable-preview', ['timetable' => $timeTable]);
     }
 
-    public function finish (Request $request) {
+    public function finish (Request $request): Redirector|Application|RedirectResponse
+    {
         try {
 
             $currentTimeTable = session()->get('previewTimeTable');
@@ -260,6 +294,12 @@ class TimeTableController extends Controller
         } catch (NotFoundExceptionInterface|ContainerExceptionInterface $e) {
             return redirect()->back();
         }
+
+        return redirect(route('dashboard'))->with('dashboard-succes', 'New timetable added');
+    }
+
+    public function current(Request $request) {
+        dd('Current');
     }
 
     #[ArrayShape(['examDays' => "array", 'unAssignedCourses' => "mixed"])]

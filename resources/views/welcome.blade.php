@@ -5,12 +5,6 @@
     @component('components.landing.nav-bar')
     @endcomponent
 
-    @component('components.landing.carousel')
-    @endcomponent
-
-    @component('components.landing.about')
-    @endcomponent
-
     @component('components.landing.features')
     @endcomponent
 

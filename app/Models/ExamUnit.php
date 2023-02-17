@@ -34,6 +34,6 @@ class ExamUnit extends Model
 
     public function examUnitSchedule(): HasMany
     {
-        return $this->hasMany(ExamUnitSchedule::class);
+        return $this->hasMany(ExamUnitSchedule::class, 'exam_units_id');
     }
 }

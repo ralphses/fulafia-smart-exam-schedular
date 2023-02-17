@@ -166,7 +166,7 @@
 
                             <div class="col-12 text-center">
                                 <button class="btn btn-primary w-100 py-3"
-                                        type="submit">{{ session('student_reg_start') ? "Sign Up" : "Get Started" }}</button>
+                                        type="submit">{{ session('student_reg_start') ? "Sign Up" : "Proceed" }}</button>
                             </div>
 
                             <div class="d-flex justify-content-between mt-4">
@@ -201,7 +201,7 @@
 
                                 <div class="col-12 text-center">
                                     <button class="btn btn-primary w-100 py-3"
-                                            type="submit">{{ session('student_reg_start') ? "Sign Up" : "Get Started" }}</button>
+                                            type="submit">{{ session('student_reg_start') ? "Sign Up" : "Submit" }}</button>
                                 </div>
 
                                 <div class="d-flex justify-content-between mt-4">

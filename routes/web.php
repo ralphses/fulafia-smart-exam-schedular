@@ -53,6 +53,10 @@ Route::prefix('/students')->group(function () {
     Route::post('/register/courses', [StudentController::class, 'registerCourses'])
         ->name('student.register.store.courses');
 
+    Route::get('/view', [TimeTableController::class, 'showTable'])
+        ->name('timetable.view.public');
+
+
 });
 
 Route::prefix('/schools')->group(function () {
@@ -144,7 +148,7 @@ Route::prefix('/faculty')->middleware(['auth', 'verified'])->group(function () {
 
 Route::prefix('timetable')->middleware(['auth', 'verified'])->group(function () {
 
-    Route::get('/', [TimeTableController::class, 'index'])
+    Route::get('/current', [TimeTableController::class, 'current'])
         ->name('timetable.current');
 
     Route::get('/generate', [TimeTableController::class, 'create'])
@@ -155,6 +159,15 @@ Route::prefix('timetable')->middleware(['auth', 'verified'])->group(function () 
 
     Route::post('/finish', [TimeTableController::class, 'finish'])
         ->name('timetable.finish');
+
+    Route::get('/', [TimeTableController::class, 'index'])
+        ->name('timetable.all');
+
+    Route::get('/view/{id}', [TimeTableController::class, 'show'])
+        ->name('timetable.view');
+
+    Route::delete('/delete/{id}', [TimeTableController::class, 'delete'])
+        ->name('timetable.delete');
 });
 
 Route::prefix('timeslot')->middleware(['auth', 'verified'])->group(function () {

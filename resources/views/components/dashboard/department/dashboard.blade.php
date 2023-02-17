@@ -20,6 +20,16 @@
                         </div>
                     </nav>
                 @endif
+                @if(session('dashboard-succes'))
+                    <nav class="flex-shrink-0 mt-3 mt-sm-0 ms-sm-3" aria-label="breadcrumb">
+                        <div class="alert alert-secondary alert-dismissible alert-success" role="alert">
+                            <p class="mb-0">
+                                {{ session()->get('dashboard-succes') }} <a class="alert-link" href="{{ route('dashboard') }}">OK</a>!
+                            </p>
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                    </nav>
+                @endif
             </div>
 
             <div class="flex-shrink-0 mt-3 mt-sm-0 ms-sm-3">

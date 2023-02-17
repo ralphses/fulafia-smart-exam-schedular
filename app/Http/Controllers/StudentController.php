@@ -7,9 +7,10 @@ use App\Models\Course;
 use App\Models\Department;
 use App\Models\School;
 use App\Models\Student;
+use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Routing\Redirector;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\View\View;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Validation\Rule;
@@ -103,7 +104,8 @@ class StudentController extends Controller
         }
    }
 
-   public function registerFaculty(Request $request) {
+   public function registerFaculty(Request $request): Redirector|Application|RedirectResponse
+   {
 
        $request->validate([
            'student-department' => ['required', Rule::exists('departments', 'name')],

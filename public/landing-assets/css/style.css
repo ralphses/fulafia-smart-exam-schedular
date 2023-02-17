@@ -1,6 +1,6 @@
 /********** Template CSS **********/
 :root {
-    --primary: #355EFC;
+    --primary: #764200;
     --secondary: #E93C05;
     --tertiary: #555555;
     --light: #DFE4FD;
@@ -194,7 +194,7 @@ h6,
         position: relative;
         min-height: 450px;
     }
-    
+
     #header-carousel .carousel-item img {
         position: absolute;
         width: 100%;
@@ -222,7 +222,7 @@ h6,
 
 /*** Facts ***/
 .facts {
-    background: linear-gradient(rgba(53, 94, 252, .95), rgba(53, 94, 252, .95)), url(../img/bg.png);
+    background: #1C7525;
 }
 
 
@@ -238,7 +238,7 @@ h6,
     height: 50%;
     top: 0;
     left: 0;
-    background: linear-gradient(rgba(53, 94, 252, .95), rgba(53, 94, 252, .95)), url(../img/bg.png);
+    background: #1C7525;
     z-index: -1;
 }
 
