@@ -100,7 +100,7 @@ class StudentController extends Controller
 
             session()->forget(['new_std1', 'new_std2', 'select-courses']);
 
-            return  redirect('/')->with('register', 'Registration Complete');
+            return redirect('/')->with('register', 'Registration Complete');
         }
    }
 
