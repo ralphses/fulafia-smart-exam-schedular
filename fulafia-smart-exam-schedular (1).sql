@@ -21,6 +21,10 @@ SET time_zone = "+00:00";
 -- Database: `fulafia-smart-exam-schedular`
 --
 
+CREATE DATABASE `fulafia-smart-exam-schedular`;
+
+USE `fulafia-smart-exam-schedular`;
+
 -- --------------------------------------------------------
 
 --
