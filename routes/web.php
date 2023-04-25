@@ -56,6 +56,12 @@ Route::prefix('/students')->group(function () {
     Route::get('/view', [TimeTableController::class, 'showTable'])
         ->name('timetable.view.public');
 
+    Route::get('/timetable', [TimeTableController::class, 'viewStudentTimeTable'])
+        ->name('student.timetable');
+    
+    Route::post('/timetable', [TimeTableController::class, 'viewStudentTimeTable'])
+        ->name('student.timetable.view');
+
 
 });
 

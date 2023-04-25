@@ -37,6 +37,11 @@ class TimeTable extends Model
         return $this->belongsTo(School::class);
     }
 
+    public function studentSittingSchedules(): HasMany
+    {
+        return $this->hasMany(StudentSittingSchedule::class);
+    }
+
     public function examDay(): HasMany
     {
         return $this->hasMany(ExamDay::class);
@@ -44,7 +49,7 @@ class TimeTable extends Model
 
     public function sittingScheduler(): HasOne
     {
-        return $this->hasOne(SittingSchedular::class, 'time_tables_id', );
+        return $this->hasOne(SittingSchedular::class, 'time_tables_id',);
     }
 
     /**
@@ -151,5 +156,4 @@ class TimeTable extends Model
     {
         $this->scheduler = $scheduler;
     }
-
 }

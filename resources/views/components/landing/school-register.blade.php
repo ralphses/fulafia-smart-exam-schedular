@@ -12,10 +12,21 @@
                         <div class="row g-3">
                             <div class="col-sm-12">
                                 <div class="form-floating">
+                                    <input type="text" name="matric" class="form-control" id="matric">
+                                    <label for="matric">Matric Number</label>
+                                </div>
+                                @if ($errors->any('matric'))
+                                    <p style="color: red; font-size: medium">{{ $errors->first('matric') }}</p>
+                                @endif
+                            </div>
+                            <div class="col-sm-12">
+                                <div class="form-floating">
                                     <select class="form-select" id="student-school" name="_school">
                                         <option selected="" value="0">select..</option>
-                                        @foreach(\App\Models\TimeTable::all() as $timetable)
-                                            <option value="{{ $timetable->id }}">{{ $timetable->session . ' ' . $timetable->semester . ' Timetable' }}</option>
+                                        @foreach (\App\Models\TimeTable::all() as $timetable)
+                                            <option value="{{ $timetable->id }}">
+                                                {{ $timetable->session . ' ' . $timetable->semester . ' Timetable' }}
+                                            </option>
                                         @endforeach
                                     </select>
                                     <label for="student-school">Select timetable</label>
@@ -27,7 +38,8 @@
                             </div>
 
                             <div class="d-flex justify-content-between mt-4">
-                                <p><strong>ADMIN LOHIN <a class="" href="{{ route('login') }}">HERE</a></strong></p>
+                                <p><strong>ADMIN LOHIN <a class="" href="{{ route('login') }}">HERE</a></strong>
+                                </p>
                             </div>
 
                         </div>

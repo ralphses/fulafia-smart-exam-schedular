@@ -15,8 +15,14 @@ use App\Models\Models\Exam;
 use App\Models\Models\ExamDay;
 use App\Models\Models\ExamUnit;
 use App\Models\Models\Schedule;
+use App\Models\sitting\Exams as SittingExams;
+use App\Models\sitting\ExamUnit as SittingExamUnit;
+use App\Models\sitting\ExamUnitSchedule as SittingExamUnitSchedule;
+use App\Models\sitting\NewExamDay;
+use App\Models\sitting\Student as SittingStudent;
 use App\Models\SittingSchedular;
 use App\Models\Student;
+use App\Models\StudentSittingSchedule;
 use App\Models\TimeSittingSchedular;
 use App\Models\TimeSlot;
 use App\Models\TImeTable;
@@ -41,13 +47,24 @@ use Psr\Container\NotFoundExceptionInterface;
 class TimeTableController extends Controller
 {
 
-    public function showTable (Request $request): Response
+    public function showTable(Request $request): Response
     {
 
         $request->validate(['_school' => ['required', Rule::exists('time_tables', 'id')]]);
-
         $timetable = TImeTable::find($request->get('_school'));
 
+        if ($request->has('matric')) {
+
+            $student = Student::where('matric', $request->get('matric'))->first();
+
+            $studentSchdedule = $timetable->studentSittingSchedules->filter(function ($value) use ($student) {
+                return $value->student_matric === $student->matric;
+            });
+
+            // dd($studentSchdedule);
+
+            return response()->view('timetable-view-public', ['timetable' => $timetable, 'schedules' => $studentSchdedule]);
+        }
         return response()->view('timetable-view-public', ['timetable' => $timetable]);
     }
     /**
@@ -78,6 +95,14 @@ class TimeTableController extends Controller
         return response()->view('timetable-view', ['timetable' => TImeTable::find($id)]);
     }
 
+    public function viewStudentTimeTable()
+    {
+
+        $timeTables = TImeTable::all();
+
+        return response()->view('', $timeTables);
+    }
+
     /**
      * Show the form for creating a new resource.
      *
@@ -88,14 +113,18 @@ class TimeTableController extends Controller
 
         $centers = $school->examCenters;
         $faculties = $school->faculties;
-        $depts = Department::whereIn('faculty_id', $faculties->map(function($faculty) {return $faculty->id;}))->get();
-        $courses = Course::whereIn('department_id', $depts->map(function ($dep) { return $dep->id;}))->get();
+        $depts = Department::whereIn('faculty_id', $faculties->map(function ($faculty) {
+            return $faculty->id;
+        }))->get();
+        $courses = Course::whereIn('department_id', $depts->map(function ($dep) {
+            return $dep->id;
+        }))->get();
 
         $timeslots = $school->timeSlots;
 
         $response = $this->checkAvailability($centers, $faculties, $depts, $courses, $timeslots);
 
-        if($response) {
+        if ($response) {
             return redirect()->back()->with('dashboard', $response);
         }
 
@@ -144,7 +173,7 @@ class TimeTableController extends Controller
         $centers = $this->sortCentersByCapacity($centers);
 
         //Get School Name
-        $schoolName = Auth::user()->school->name;
+        $schoolName = $request->user()->school->name;
 
         //Get Semester
         $semester = strtoupper($request->get('semester')) . ' SEMESTER';
@@ -168,7 +197,9 @@ class TimeTableController extends Controller
         //Get selected Timeslots
         $timeSlots = TimeSlot::whereIn('id', $request->get('time-slots'))
             ->get()
-            ->map(function ($timeSLot) { return $timeSLot->name; })
+            ->map(function ($timeSLot) {
+                return $timeSLot->name;
+            })
             ->all();
 
         //Create a new Timetable
@@ -185,7 +216,6 @@ class TimeTableController extends Controller
                 'school_id' => Auth::user()->school->id
             ]
         );
-
 
         //Set timetable timeslots
         $timeTable->setTimeSlots($timeSlots);
@@ -208,7 +238,7 @@ class TimeTableController extends Controller
         return response()->view('timetable-preview', ['timetable' => $timeTable]);
     }
 
-    public function finish (Request $request): Redirector|Application|RedirectResponse
+    public function finish(): Redirector|Application|RedirectResponse
     {
         try {
 
@@ -216,8 +246,31 @@ class TimeTableController extends Controller
 
             $currentTimeTable->save($currentTimeTable->getAttributes());
 
-            //Todo: Create Exam days
+            $schedule = $currentTimeTable->getScheduledStudentAndCourses();
 
+            $arrangedStudents = [];
+
+            foreach ($schedule as $item) {
+
+                $seatNo = 1;
+
+                foreach ($item->getStudents() as $student) {
+
+                    $std = StudentSittingSchedule::create([
+                        'course_code' => $item->getCourseCode(),
+                        'venue' => $item->getVenue(),
+                        'time_slot' => $item->getTimeSlot(),
+                        'exam_date' => $item->getExamDate(),
+                        'student_matric' => $student->matric,
+                        'time_table_id' => $currentTimeTable->id,
+                        'seat_no' => $seatNo
+                    ]);
+
+                    $seatNo = $seatNo + 1;
+                    $arrangedStudents[] = $std;
+                }
+            }
+            //Todo: Create Exam days
             foreach ($currentTimeTable->getExamDays() as $examDay) {
 
                 //Save ExamDays
@@ -230,7 +283,7 @@ class TimeTableController extends Controller
                 //Save Exams for this exam day
                 foreach ($examDay->getExams() as $exam) {
 
-                    if(count($exam->getStudents()) > 0) {
+                    if (count($exam->getStudents()) > 0) {
 
                         $currentExam = Exams::create([
                             'time_slot_id' => TimeSlot::where('name', $exam->getTimeSlot())->first()->id,
@@ -246,7 +299,13 @@ class TimeTableController extends Controller
                             ]);
 
                             foreach ($examUnit->getCourses() as $course) {
-                                $courses = Course::where('id', $course->id)->get(['id'])->map(function ($value) {return $value->id;})->all();
+
+                                $courses = Course::where('id', $course->id)
+                                    ->get(['id'])
+                                    ->map(function ($value) {
+                                        return $value->id;
+                                    })
+                                    ->all();
 
                                 ExamUnitSchedule::create([
                                     'exam_units_id' => $currentExamUnit->id,
@@ -277,9 +336,13 @@ class TimeTableController extends Controller
 
                     foreach ($timeSchedule as $timeSlot => $students) {
 
-                        $students = array_filter($students, function ($val) { return !is_null($val); });
+                        $students = array_filter($students, function ($val) {
+                            return !is_null($val);
+                        });
 
-                        $stds = implode('|', array_map(function ($v) { return $v->id; }, $students));
+                        $stds = implode('|', array_map(function ($v) {
+                            return $v->id;
+                        }, $students));
 
                         TimeSittingSchedular::create([
                             'venue_sitting_schedular_id' => $currentVenueSchedule->id,
@@ -288,18 +351,17 @@ class TimeTableController extends Controller
                         ]);
                     }
                 }
-
             }
-
-        } catch (NotFoundExceptionInterface|ContainerExceptionInterface $e) {
+        } catch (NotFoundExceptionInterface | ContainerExceptionInterface $e) {
             return redirect()->back();
         }
 
         return redirect(route('dashboard'))->with('dashboard-succes', 'New timetable added');
     }
 
-    public function current(Request $request) {
-        dd('Current');
+    public function current(Request $request)
+    {
+        // dd('Current');
     }
 
     #[ArrayShape(['examDays' => "array", 'unAssignedCourses' => "mixed"])]
@@ -308,13 +370,16 @@ class TimeTableController extends Controller
         $allExamDays = [];
         $scheduledStudentAndCourses = [];
 
-        $courses = collect($courses)->map(function ($course) {
-            $students = $course->students->map(function ($std) {
-                return $std->id;
-            });
-            return new CourseDB($course->id, $students->all(), $course->title, false, $course->general);
-        }
-        )->filter(function ($value) { return count($value->getStudents()) > 0;});
+        $courses = collect($courses)->map(
+            function ($course) {
+                $students = $course->students->map(function ($std) {
+                    return $std->id;
+                });
+                return new CourseDB($course->id, $students->all(), $course->title, false, $course->general);
+            }
+        )->filter(function ($value) {
+            return count($value->getStudents()) > 0;
+        });
 
         $centers = collect($centers)
             ->map(function ($center) {
@@ -347,7 +412,7 @@ class TimeTableController extends Controller
 
                     $venue = $this->getCenter($allCenters, $currentRequiredSpace);
 
-                    if(is_null($venue)) break;
+                    if (is_null($venue)) break;
 
                     $xmUnit->setVenue(ExamCenters::find($venue->getId()));
 
@@ -362,13 +427,13 @@ class TimeTableController extends Controller
 
                         if (is_null($course)) break;
 
-                        if($venue->getFreeSpace() < count($course->getStudents())) {
+                        if ($venue->getFreeSpace() < count($course->getStudents())) {
 
                             //Get another venue with required size
                             $venue = $this->getCenter($allCenters, count($course->getStudents()));
 
                             //Spread students across all available venues if venue with required size not available
-                            if(is_null($venue)) {
+                            if (is_null($venue)) {
 
                                 $requiredStudents = collect($course->getStudents());
                                 $requiredSpace = $requiredStudents->count();
@@ -377,7 +442,7 @@ class TimeTableController extends Controller
 
                                     $venue = $this->getNextAvailableCenter($allCenters, $requiredSpace);
 
-                                    if(!$venue) {
+                                    if (!$venue) {
                                         break;
                                     }
 
@@ -399,9 +464,7 @@ class TimeTableController extends Controller
 
                                     $venue->setFilled(true);
                                 }
-
-                            }
-                            else {
+                            } else {
 
                                 $newExamUnit = new ExamUnit();
 
@@ -417,11 +480,10 @@ class TimeTableController extends Controller
 
                                 $checkDailyStudents++;
 
-                                if($checkDailyStudents % 2 == 0) {
+                                if ($checkDailyStudents % 2 == 0) {
                                     $dailyStudents = array_merge($dailyStudents, $course->getStudents());
                                 }
                             }
-
                         } else {
                             $xmUnit->addCourses($course->getId());
                             $scheduledStudentAndCourses = $this->addStudentsToScheduler($scheduledStudentAndCourses, $course->getId(), $venue->getId(), count($course->getStudents()), $timeSlot, $course->getStudents(), $examDay->getDate());
@@ -429,13 +491,12 @@ class TimeTableController extends Controller
 
                         Utility::$currentStudents = array_merge(Utility::$currentStudents, $course->getStudents());
 
-                        if(!$venue) {
+                        if (!$venue) {
                             continue;
                         }
                         $venue->setFreeSpace($venue->getFreeSpace() - count($course->getStudents()));
                         $course->setAssigned(true);
-
-                    }while($venue AND $venue->getFreeSpace() > 0);
+                    } while ($venue and $venue->getFreeSpace() > 0);
                     //End of add courses for a unit
 
                     $examUnits[] = $xmUnit;
@@ -477,15 +538,11 @@ class TimeTableController extends Controller
         $courses = [];
         $courseMode = $request->get('course-mode');
 
-        if($courseMode === 'all') {
+        if ($courseMode === 'all') {
             $courses = $this->getAllAvailableCourses();
-        }
-
-        elseif ($courseMode === 'faculty') {
+        } elseif ($courseMode === 'faculty') {
             $courses = $this->getFacultyCourses($request->get('faculty-course'));
-        }
-
-        elseif ($courseMode === 'department') {
+        } elseif ($courseMode === 'department') {
             $courses = $this->getDepartmentCourses($request->get('dept_course'));
         }
 
@@ -507,12 +564,12 @@ class TimeTableController extends Controller
 
         $count = 0;
 
-       do {
-           $dates[$count] = new ExamDay($this->getDateDay($start)[0], $this->getDateDay($start)[1]);
-           $count += 1;
+        do {
+            $dates[$count] = new ExamDay($this->getDateDay($start)[0], $this->getDateDay($start)[1]);
+            $count += 1;
 
-           $start = date('Y-M-d l', strtotime($startDate. ' +' . $count . ' day'));
-       } while($count <= $interval);
+            $start = date('Y-M-d l', strtotime($startDate . ' +' . $count . ' day'));
+        } while ($count <= $interval);
 
         return $dates;
     }
@@ -527,7 +584,7 @@ class TimeTableController extends Controller
         $newDates = [];
         foreach ($examDates as $key => $date) {
 
-            if(in_array($date->getWeekDay(), $allowedDays)) {
+            if (in_array($date->getWeekDay(), $allowedDays)) {
                 $newDates[] = $date;
             }
         }
@@ -540,7 +597,7 @@ class TimeTableController extends Controller
 
         foreach ($centers as $center) {
             $var = ExamCenters::find($center);
-            if($var->active) {
+            if ($var->active) {
                 $availableCenters[] = $var;
             }
         }
@@ -552,9 +609,13 @@ class TimeTableController extends Controller
         $school = Auth::user()->school;
 
         $faculties = $school->faculties;
-        $depts = Department::whereIn('faculty_id', $faculties->map(function($faculty) {return $faculty->id;}))->get();
+        $depts = Department::whereIn('faculty_id', $faculties->map(function ($faculty) {
+            return $faculty->id;
+        }))->get();
 
-        return Course::whereIn('department_id', $depts->map(function ($dep) { return $dep->id;}))
+        return Course::whereIn('department_id', $depts->map(function ($dep) {
+            return $dep->id;
+        }))
             ->where('active', 1)
             ->get();
     }
@@ -563,7 +624,9 @@ class TimeTableController extends Controller
     {
         $depts = Department::where('faculty_id', $facultyID)->get();
 
-        return Course::whereIn('department_id', $depts->map(function ($dep) { return $dep->id;}))
+        return Course::whereIn('department_id', $depts->map(function ($dep) {
+            return $dep->id;
+        }))
             ->where('active', 1)
             ->get();
     }
@@ -577,9 +640,9 @@ class TimeTableController extends Controller
 
     private function sortCoursesByStudents(array $courses): array
     {
-        for($i = 0; $i < count($courses); $i++) {
+        for ($i = 0; $i < count($courses); $i++) {
             for ($j = 0; $j < count($courses) - 1; $j++) {
-                if($courses[$j]->students->count() > $courses[$j + 1]->students->count()) {
+                if ($courses[$j]->students->count() > $courses[$j + 1]->students->count()) {
                     $var = $courses[$j];
                     $courses[$j] = $courses[$j + 1];
                     $courses[$j + 1] = $var;
@@ -592,7 +655,7 @@ class TimeTableController extends Controller
 
     private function sortCentersByCapacity(array $centers): array
     {
-        for($i = 0; $i < count($centers); $i++) {
+        for ($i = 0; $i < count($centers); $i++) {
             for ($j = 0; $j < count($centers) - 1; $j++) {
                 if ($centers[$j]->capacity > $centers[$j + 1]->capacity) {
                     $var = $centers[$j];
@@ -606,7 +669,7 @@ class TimeTableController extends Controller
 
     private function generalCoursesFirst(array $courses): array
     {
-        for($i = 0; $i < count($courses); $i++) {
+        for ($i = 0; $i < count($courses); $i++) {
             for ($j = 0; $j < count($courses) - 1; $j++) {
                 if ($courses[$j]->general < $courses[$j + 1]->general) {
                     $var = $courses[$j];
@@ -616,22 +679,22 @@ class TimeTableController extends Controller
             }
         }
         return $courses;
-
     }
 
-    private function nextCourse($courses, array $currentStudents, $dailyStudents, $currentCourseId) {
+    private function nextCourse($courses, array $currentStudents, $dailyStudents, $currentCourseId)
+    {
 
         foreach ($courses as $cours) {
 
-            if(
-                !$cours->isAssigned() AND
-                count(array_intersect($cours->getStudents(), $currentStudents)) < 1 AND
-                $cours->getId() != $currentCourseId AND
-                count(array_intersect($cours->getStudents(), $dailyStudents)) < 1) {
+            if (
+                !$cours->isAssigned() and
+                count(array_intersect($cours->getStudents(), $currentStudents)) < 1 and
+                $cours->getId() != $currentCourseId and
+                count(array_intersect($cours->getStudents(), $dailyStudents)) < 1
+            ) {
                 return $cours;
             }
         }
-
     }
 
 
@@ -644,32 +707,41 @@ class TimeTableController extends Controller
     {
         $total = 0;
 
-        $allCenters = $allCenters->filter(function ($v) {return !$v->isFilled();});
+        $allCenters = $allCenters->filter(function ($v) {
+            return !$v->isFilled();
+        });
 
         foreach ($allCenters->all() as $center) {
             $total = $total + $center->getFreeSpace();
         }
 
-        if($total < $requiredSpace) {
+        if ($total < $requiredSpace) {
             return false;
-        }
-
-        else {
+        } else {
             return
                 $allCenters
-                    ->sort(function ($val1, $val2) { return $val1->getFreeSpace() > $val2->getFreeSpace(); })
-                    ->filter(function ($va) {return !$va->isFilled();})
-                    ->first();
+                ->sort(function ($val1, $val2) {
+                    return $val1->getFreeSpace() > $val2->getFreeSpace();
+                })
+                ->filter(function ($va) {
+                    return !$va->isFilled();
+                })
+                ->first();
         }
-
     }
 
     private function getCenter(Collections $allCenters, int $currentRequiredSpace)
     {
         return $allCenters
-            ->map(function ($c) use ($currentRequiredSpace) { return ($c->getFreeSpace() >= $currentRequiredSpace) ? $c : null; })
-            ->filter(function ($f) { return $f != null;})
-            ->sort(function ($v1, $v2) { return $v1->getFreeSpace() < $v2->getFreeSpace();})
+            ->map(function ($c) use ($currentRequiredSpace) {
+                return ($c->getFreeSpace() >= $currentRequiredSpace) ? $c : null;
+            })
+            ->filter(function ($f) {
+                return $f != null;
+            })
+            ->sort(function ($v1, $v2) {
+                return $v1->getFreeSpace() < $v2->getFreeSpace();
+            })
             ->first();
     }
 
@@ -680,7 +752,7 @@ class TimeTableController extends Controller
                 $available = true;
                 foreach ($day->getExams() as $exam) {
                     $available = count($exam->getStudents()) > 0;
-                    if($available) break;
+                    if ($available) break;
                 }
                 return $available;
             })->map(function ($value) {
@@ -694,7 +766,7 @@ class TimeTableController extends Controller
 
                 foreach ($value->getExams() as $exam) {
                     foreach ($exam->getExamUnits() as $unit) {
-                        if(count($unit->getCourses()) > 0) {
+                        if (count($unit->getCourses()) > 0) {
                             $exUnits[] = $unit;
                         }
                     }
@@ -710,7 +782,6 @@ class TimeTableController extends Controller
 
                 return $newExamDay;
             });
-
     }
 
     private function buildScheduler(TImeTable $timeTable): array
@@ -718,6 +789,8 @@ class TimeTableController extends Controller
         $finalScheduler = [];
 
         $schedule = $timeTable->getScheduledStudentAndCourses();
+
+        // dd($schedule);
 
         $groupedStudentsByDay = $this->sortStudentsByExamDay($schedule);
         $groupedStudentsByVenue = $this->sortSudentsByVenue($groupedStudentsByDay);
@@ -739,8 +812,8 @@ class TimeTableController extends Controller
             }
         }
 
+        // dd($finalScheduler);
         return $finalScheduler;
-
     }
 
     /**
@@ -843,23 +916,15 @@ class TimeTableController extends Controller
 
     private function checkAvailability($centers, $faculties, $depts, $courses, $timeslots): bool|string
     {
-        if($centers->count() < 1) {
+        if ($centers->count() < 1) {
             return "No Examination Center added, add one";
-        }
-
-        else if($faculties->count() < 1) {
+        } else if ($faculties->count() < 1) {
             return "No Faculty added, add one";
-        }
-
-        else if($depts->count() < 1) {
+        } else if ($depts->count() < 1) {
             return "No Department added, add one";
-        }
-
-        else if($courses->count() < 1) {
+        } else if ($courses->count() < 1) {
             return "No Course added, add one";
-        }
-
-        else if($timeslots->count() < 1) {
+        } else if ($timeslots->count() < 1) {
             return "No Timeslot added, add one";
         }
 
