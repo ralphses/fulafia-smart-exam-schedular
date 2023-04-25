@@ -38,7 +38,7 @@
                             </div>
 
                             <div class="d-flex justify-content-between mt-4">
-                                <p><strong>ADMIN LOHIN <a class="" href="{{ route('login') }}">HERE</a></strong>
+                                <p><strong>ADMIN LOGIN <a class="" href="{{ route('login') }}">HERE</a></strong>
                                 </p>
                             </div>
 

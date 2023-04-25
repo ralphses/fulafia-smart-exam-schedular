@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Mar 20, 2023 at 09:26 PM
+-- Generation Time: Apr 25, 2023 at 09:20 PM
 -- Server version: 10.4.25-MariaDB
 -- PHP Version: 8.1.10
 
@@ -21,15 +21,16 @@ SET time_zone = "+00:00";
 -- Database: `fulafia-smart-exam-schedular`
 --
 
-CREATE DATABASE `fulafia-smart-exam-schedular`;
-
-USE `fulafia-smart-exam-schedular`;
-
 -- --------------------------------------------------------
 
 --
 -- Table structure for table `courses`
 --
+
+
+CREATE DATABASE `fulafia-smart-exam-schedular`;
+
+USE `fulafia-smart-exam-schedular`;
 
 CREATE TABLE `courses` (
   `id` bigint(20) UNSIGNED NOT NULL,
@@ -378,7 +379,8 @@ INSERT INTO `migrations` (`id`, `migration`, `batch`) VALUES
 (17, '992_2023_01_17_091125_create_exam_day_table', 12),
 (18, '993_2023_01_17_091153_create_exams_table', 13),
 (19, '994_2023_01_17_090839_create_exam_units_table', 14),
-(20, '4000_2023_02_13_220454_create_exam_unit_schedules_table', 15);
+(20, '4000_2023_02_13_220454_create_exam_unit_schedules_table', 15),
+(21, '2023_04_25_171022_create_student_sitting_schedules_table', 16);
 
 -- --------------------------------------------------------
 
@@ -494,6 +496,25 @@ INSERT INTO `students` (`id`, `name`, `matric`, `email`, `level`, `fees`, `schoo
 (1, 'Raphael Eze', '2031800071', 'eze.raph21s@gmail.com', '600 Level', '2221112223332', 1, 1, 1, '2023-02-14 16:13:59', '2023-02-14 16:13:59'),
 (2, 'Raphaelhhs', '2031800078', 'eze.raph21sssass@gmail.com', '700 Level', '2221112223338hh', 1, 1, 1, '2023-02-14 16:14:34', '2023-02-14 16:14:34'),
 (3, 'Raphael Ezes', '2031800075', 'eze.raph21sss@gmail.com', '400 Level', '2221112223332s', 1, 1, 1, '2023-02-14 16:15:28', '2023-02-14 16:15:28');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `student_sitting_schedules`
+--
+
+CREATE TABLE `student_sitting_schedules` (
+  `id` bigint(20) UNSIGNED NOT NULL,
+  `course_code` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `venue` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `time_slot` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `exam_date` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `student_matric` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `seat_no` bigint(20) UNSIGNED DEFAULT NULL,
+  `time_table_id` bigint(20) UNSIGNED NOT NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- --------------------------------------------------------
 
@@ -626,7 +647,7 @@ CREATE TABLE `users` (
 --
 
 INSERT INTO `users` (`id`, `name`, `email`, `email_verified_at`, `password`, `remember_token`, `created_at`, `updated_at`) VALUES
-(2, 'Raphael Eze', 'eze.raph@gmail.com', '2023-02-14 16:04:45', '$2y$10$lUfUWZVC1.b.BFHjaEjr9.uo8z7Tc4ljD62Ru4JeuQUk1E/VKkuYW', NULL, '2023-02-14 16:04:22', '2023-02-14 16:04:45');
+(2, 'Muhammed Musa', 'cbt@fulafia.edu', '2023-02-14 16:04:45', '$2y$10$lUfUWZVC1.b.BFHjaEjr9.uo8z7Tc4ljD62Ru4JeuQUk1E/VKkuYW', NULL, '2023-02-14 16:04:22', '2023-02-14 16:04:45');
 
 -- --------------------------------------------------------
 
@@ -786,6 +807,13 @@ ALTER TABLE `students`
   ADD KEY `students_department_id_foreign` (`department_id`);
 
 --
+-- Indexes for table `student_sitting_schedules`
+--
+ALTER TABLE `student_sitting_schedules`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `student_sitting_schedules_time_table_id_foreign` (`time_table_id`);
+
+--
 -- Indexes for table `time_sitting_schedulars`
 --
 ALTER TABLE `time_sitting_schedulars`
@@ -888,7 +916,7 @@ ALTER TABLE `failed_jobs`
 -- AUTO_INCREMENT for table `migrations`
 --
 ALTER TABLE `migrations`
-  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=21;
+  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=22;
 
 --
 -- AUTO_INCREMENT for table `personal_access_tokens`
@@ -913,6 +941,12 @@ ALTER TABLE `sitting_schedulars`
 --
 ALTER TABLE `students`
   MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
+
+--
+-- AUTO_INCREMENT for table `student_sitting_schedules`
+--
+ALTER TABLE `student_sitting_schedules`
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT for table `time_sitting_schedulars`
@@ -1025,6 +1059,12 @@ ALTER TABLE `students`
   ADD CONSTRAINT `students_department_id_foreign` FOREIGN KEY (`department_id`) REFERENCES `departments` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
   ADD CONSTRAINT `students_faculty_id_foreign` FOREIGN KEY (`faculty_id`) REFERENCES `faculties` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
   ADD CONSTRAINT `students_school_id_foreign` FOREIGN KEY (`school_id`) REFERENCES `schools` (`id`) ON DELETE CASCADE ON UPDATE CASCADE;
+
+--
+-- Constraints for table `student_sitting_schedules`
+--
+ALTER TABLE `student_sitting_schedules`
+  ADD CONSTRAINT `student_sitting_schedules_time_table_id_foreign` FOREIGN KEY (`time_table_id`) REFERENCES `time_tables` (`id`) ON DELETE CASCADE ON UPDATE CASCADE;
 
 --
 -- Constraints for table `time_sitting_schedulars`
